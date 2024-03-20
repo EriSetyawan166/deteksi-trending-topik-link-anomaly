@@ -1,0 +1,12 @@
+# Ignore Python byte-compiled files
+__pycache__/
+
+# Ignore file .env
+.env
+
+# Ignore files inside tweets-data and tweets-data-preprocessed
+tweets-data/*
+tweets-data-preprocessed/*
+
+!tweets-data-preprocessed/.gitkeep 
+!tweets-data/.gitkeep 
