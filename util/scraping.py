@@ -3,7 +3,6 @@ import subprocess
 import mysql.connector
 import os
 from dotenv import load_dotenv
-from connection import connect_to_database
 
 def scrape_tweets(start_date, end_date, search_query, tweet_limit, token):
     # Command untuk menjalankan tweet-harvest
@@ -61,10 +60,7 @@ def insert_data_to_database(database_connection):
 def main():
     load_dotenv()
     token = os.getenv("TOKEN")
-    scrape_tweets("18-03-2024", "19-03-2024", "puasa", 1, token)
-    connection = connect_to_database("localhost", "root", "", "deteksi_trending_topik")
-    insert_data_to_database(connection)
-
+    scrape_tweets("19-02-2024", "26-03-2024", "pemilu", 500, token)
 
 if __name__ == "__main__":
     main()
