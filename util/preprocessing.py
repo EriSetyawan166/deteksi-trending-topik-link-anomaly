@@ -1,6 +1,8 @@
 import os
 import pandas as pd
+import re
 from dotenv import load_dotenv
+from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 import mysql.connector
 
 load_dotenv()
@@ -70,6 +72,99 @@ def replace_slangwords(tweet, cursor):
     new_tweet = ' '.join(words)
     return new_tweet
 
+def remove_stopwords(tweet):
+    factory = StopWordRemoverFactory()
+    stopword_remover = factory.create_stop_word_remover()
+    tweet_clean = stopword_remover.remove(tweet)
+    return tweet_clean
+
+def remove_urls(tweet):
+    """
+    Menghapus URL dari teks tweet.
+
+    Args:
+        tweet (str): Teks tweet yang akan dihapus URL-nya.
+
+    Returns:
+        str: Teks tweet tanpa URL.
+    """
+    # Pola regex untuk mendeteksi URL
+    url_pattern = r'https?://\S+|www\.\S+'
+
+    # Mengganti URL dengan string kosong
+    tweet_clean = re.sub(url_pattern, '', tweet)
+
+    return tweet_clean
+
+def remove_mentions(tweet):
+    """
+    Menghilangkan mention dari teks tweet.
+
+    Args:
+        tweet (str): Teks tweet yang akan dihilangkan mention-nya.
+
+    Returns:
+        str: Teks tweet tanpa mention.
+    """
+    # Pola regex untuk mendeteksi mention
+    mention_pattern = r'@\w+'
+
+    # Mengganti mention dengan string kosong
+    tweet_clean = re.sub(mention_pattern, '', tweet)
+
+    return tweet_clean
+
+def remove_hashtags(tweet):
+    """
+    Menghilangkan hashtag dari teks tweet.
+
+    Args:
+        tweet (str): Teks tweet yang akan dihilangkan hashtag-nya.
+
+    Returns:
+        str: Teks tweet tanpa hashtag.
+    """
+    # Pola regex untuk mendeteksi hashtag
+    hashtag_pattern = r'#\w+'
+
+    # Mengganti hashtag dengan string kosong
+    tweet_clean = re.sub(hashtag_pattern, '', tweet)
+
+    return tweet_clean
+
+def remove_non_alphabet(tweet):
+    """
+    Menghilangkan karakter selain a-z dari teks tweet.
+
+    Args:
+        tweet (str): Teks tweet yang akan dihilangkan karakter selain a-z.
+
+    Returns:
+        str: Teks tweet hanya mengandung karakter a-z.
+    """
+    # Pola regex untuk mendeteksi karakter selain a-z
+    non_alphabet_pattern = r'[^a-zA-Z\s]'
+
+    # Mengganti karakter selain a-z dengan string kosong
+    tweet_clean = re.sub(non_alphabet_pattern, '', tweet)
+
+    return tweet_clean
+
+def remove_extra_spaces(tweet):
+    """
+    Menghilangkan spasi yang berjarak lebih dari satu spasi dari teks tweet.
+
+    Args:
+        tweet (str): Teks tweet yang akan dihilangkan spasi berjarak.
+
+    Returns:
+        str: Teks tweet tanpa spasi yang berjarak lebih dari satu spasi.
+    """
+    # Mengganti spasi yang berjarak lebih dari satu spasi menjadi satu spasi
+    tweet_clean = ' '.join(tweet.split())
+
+    return tweet_clean
+
 
 def preprocess_csv(directory):
     """
@@ -110,8 +205,28 @@ def preprocess_csv(directory):
         # Mengubah teks di dalam kolom 'tweet' menjadi lowercase
         df_selected['tweet'] = df_selected['tweet'].str.lower()
 
+        # mengubah slangword
         cursor = connection.cursor()
         df_selected['tweet'] = df_selected['tweet'].apply(lambda x: replace_slangwords(x, cursor))
+
+        # Menghapus stopword
+        df_selected['tweet'] = df_selected['tweet'].apply(remove_stopwords)
+
+        # Menghapus url
+        df_selected['tweet'] = df_selected['tweet'].apply(remove_urls)
+
+        # Menghapus mention
+        df_selected['tweet'] = df_selected['tweet'].apply(remove_mentions)
+
+        # Menghapus hastags
+        df_selected['tweet'] = df_selected['tweet'].apply(remove_hashtags)
+
+        # Menghapus huruf selain a-z
+        df_selected['tweet'] = df_selected['tweet'].apply(remove_non_alphabet)
+         
+        # Menghapus spasi berjarak
+        df_selected['tweet'] = df_selected['tweet'].apply(remove_extra_spaces)
+
         # Urutkan berdasarkan kolom 'created_at' dari waktu terlama ke terbaru
         df_sorted = df_selected.sort_values(by='time', ascending=True)
         df_sorted.to_csv(os.path.join(
@@ -127,6 +242,7 @@ def preprocess_csv(directory):
 def main():
     directory = 'tweets-data/'
     preprocess_csv(directory)
+    
 
 
 if __name__ == "__main__":
