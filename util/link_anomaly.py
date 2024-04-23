@@ -81,6 +81,58 @@ def hitung_agregasi_skor_link_anomaly(skor_link_anomaly, tau):
     # print(result)
     return result
 
+def periksa_agregasi_diskrit(agregasi_skor_link_anomaly, threshold_burst = 0.9995):
+    """
+    Memeriksa apakah ada nilai dalam urutan yang melebihi Threshold burst yang ditentukan.
+    Mengembalikan True jika lebih dari satu nilai melebihi Threshold burst,
+    jika tidak mengembalikan False.
+
+    Parameters:
+        agregasi_skor_link_anomaly (list of float): Daftar skor anomali.
+        threshold_burst (float, opsional): Threshold burst untuk menentukan burst. Default adalah 0.9995.
+
+    Returns:
+        bool: True jika urutan memiliki lebih dari satu , False jika tidak.
+    """
+    cek = [nilai for nilai in agregasi_skor_link_anomaly if nilai > threshold_burst]
+
+    if len (cek) > 1:
+        return cek
+    else:
+        return False
+
+def hitung_cost_function(cleaned_agregasi_skor_link_anomaly, selang_waktu ,p = 0.3, alpha_burst = 0.01):
+    """
+    Fungsi untuk menghitung nilai cost function
+    Parameters:
+        cleaned_agregasi_skor_link_anomaly (list of float): agregasi skor link anomaly yang sudah dibersihkan
+        selang_waktu (int) = selang waktu kemunculan antar skor agregasi pada sequence
+        p (float, opsional) = probabilitas kemunculan. default 0.3
+        alpha burst (float, optional) = alpha burst. default 0.01 
+
+    Returns:
+        float: agregasi skor link anomaly
+    """
+    transisi_state = len(cleaned_agregasi_skor_link_anomaly) - 1
+    
+    result = transisi_state * math.log ((1 - p) / p)
+    
+    for i in range(transisi_state):
+        result += - math.log (alpha_burst * math.exp(-alpha_burst * selang_waktu))
+        
+    return result
+
+def cari_cost_function_minimum(cost_function):
+    """
+    Fungsi untuk mengambil nilai cost function minimum
+    Parameters:
+        cost_function (list of float): hasil cost function semua sequence
+
+    Returns:
+        float: cost function minimum
+    """
+    result = min(cost_function)
+    return result
 
 def main():
     locale.setlocale(locale.LC_TIME, 'id_ID')
@@ -158,9 +210,13 @@ def main():
         # print(temp_skor_anomaly)
         agregasi_skor_anomaly_per_diskrit.append(hitung_agregasi_skor_link_anomaly(temp_skor_anomaly, tau))
 
-    print(agregasi_skor_anomaly_per_diskrit)
-    print()
+    cleaned_agregasi_skor_anomaly_per_diskrit = periksa_agregasi_diskrit(agregasi_skor_anomaly_per_diskrit)
+    
+    data_testing_agregasi = [1.38, 1.20, 1.10]
 
+    cleaned_data_testing_agregasi = periksa_agregasi_diskrit(data_testing_agregasi)
+    result_cost_function_data_testing = hitung_cost_function(cleaned_data_testing_agregasi, 4)
+    # print(result_cost_function_data_testing)
 
     
     
