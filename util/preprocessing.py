@@ -3,7 +3,8 @@ import pandas as pd
 import re
 from dotenv import load_dotenv
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
-import mysql.connector
+from db_operation import ambil_data_kotor, ambil_kamus_slangword, masukan_data_hasil_preprocessed
+import datetime
 
 load_dotenv()
 DB_HOST = os.getenv("DB_HOST")
@@ -11,23 +12,26 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_DATABASE = os.getenv("DB_DATABASE")
 
-def adjust_timestamp(df):
+def adjust_timestamp(time_str):
     """
-    Mengubah format waktu pada dataframe.
+    Mengubah format waktu dari string ke string format lain.
 
     Args:
-        df (pandas.DataFrame): Dataframe yang akan diubah format waktunya.
+        time_str (str): String waktu yang akan diubah formatnya.
 
     Returns:
-        pandas.DataFrame: Dataframe dengan format waktu yang sudah diubah.
+        str: Waktu dengan format baru sebagai string.
     """
+    # Parse the string to datetime object
+    original_format = '%a %b %d %H:%M:%S %z %Y'
+    dt = datetime.datetime.strptime(time_str, original_format)
 
-    df['created_at'] = pd.to_datetime(
-        df['created_at'], format='%a %b %d %H:%M:%S %z %Y')
-    df['created_at'] = df['created_at'] + pd.DateOffset(hours=7)
+    # Tambahkan 7 jam
+    adjusted_dt = dt + datetime.timedelta(hours=7)
 
-    return df
-
+    # Format datetime sebagai string
+    new_format = '%Y-%m-%d %H:%M:%S'
+    return adjusted_dt.strftime(new_format)
 
 def selection_attribute(df):
     """
@@ -55,24 +59,35 @@ def selection_attribute(df):
 
     return df_selected
 
-def replace_slangwords(tweet, cursor):
-    cursor.execute("SELECT kata_tidak_baku, kata_baku FROM slangword")
-    slangwords = cursor.fetchall()
+def replace_slangwords(tweet, slangwords):
+    """
+    Mengubah kata tidak baku menjadi kata baku dari teks tweet.
 
-    # Pisahkan tweet menjadi kata-kata
+    Args:
+        tweet (str): Teks tweet yang akan diubah katanya dari tidak baku menjadi baku.
+
+    Returns:
+        str: Teks tweet tanpa URL.
+    """
     words = tweet.split()
-
-    # Iterasi setiap kata
-    for i in range(len(words)):
+    for i in range(len(words)): 
         for slangword in slangwords:
-            if slangword[0] == words[i]:
+            if slangword[2] == words[i]:
                 words[i] = slangword[1]
 
-    # Gabungkan kata-kata menjadi tweet baru
-    new_tweet = ' '.join(words)
-    return new_tweet
+    result = ' '.join(words)
+    return result
 
 def remove_stopwords(tweet):
+    """
+    Menghapus stopword dari teks tweet.
+
+    Args:
+        tweet (str): Teks tweet yang akan dihapus stopwordnya.
+
+    Returns:
+        str: Teks tweet tanpa stopwords.
+    """
     factory = StopWordRemoverFactory()
     stopword_remover = factory.create_stop_word_remover()
     tweet_clean = stopword_remover.remove(tweet)
@@ -165,83 +180,61 @@ def remove_extra_spaces(tweet):
 
     return tweet_clean
 
+def preprocess(datas):
+    slangword = ambil_kamus_slangword()
+    # print(slangword)
 
-def preprocess_csv(directory):
-    """
-    Melakukan preprocessing pada file CSV dalam suatu direktori.
-
-    Args:
-        directory (str): Direktori tempat file CSV disimpan.
-
-    Returns:
-        bool: True jika preprocessing berhasil dilakukan dan file baru disimpan, False jika file sudah dipreprocessed sebelumnya.
-    """
-    
-    connection = mysql.connector.connect(
-            host=DB_HOST,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            database=DB_DATABASE
-        )
-    file_list = os.listdir(directory)
-
-    latest_file = max(file_list)
-    # print(latest_file)
-
-    preprocessed_file_name = latest_file.replace('.csv', '-preprocessed.csv')
-
-    if not os.path.exists(os.path.join('tweets-data-preprocessed', preprocessed_file_name)):
-
-        df_original = pd.read_csv(os.path.join(directory, latest_file))
-
-        df_adjusted = adjust_timestamp(df_original)
-
+    processed_data = []
+    for data in datas:
         # Filter baris berdasarkan kolom 'full_text' yang mengandung karakter "@"
-        df_filtered = df_adjusted[df_adjusted['full_text'].str.contains('@')]
+        if '@' in data[3]:
+            # Menghitung jumlah "@"
+            jumlah_mention = data[3].count('@')
 
-        # Seleksi atribut
-        df_selected = selection_attribute(df_filtered)
+            # Ekstrak semua user yang disebutkan
+            id_user_mentioned = re.findall(r'(@\w+)', data[3])
 
-        # Mengubah teks di dalam kolom 'tweet' menjadi lowercase
-        df_selected['tweet'] = df_selected['tweet'].str.lower()
+            time = adjust_timestamp(data[1])
+            
+            # Mengubah teks menjadi lowercase
+            text = data[3].lower()
 
-        # mengubah slangword
-        cursor = connection.cursor()
-        df_selected['tweet'] = df_selected['tweet'].apply(lambda x: replace_slangwords(x, cursor))
+            # mengubah slangword
+            text = replace_slangwords(text, slangword)
 
-        # Menghapus stopword
-        df_selected['tweet'] = df_selected['tweet'].apply(remove_stopwords)
+            #Menghapus stopword
+            text = remove_stopwords(text)
 
-        # Menghapus url
-        df_selected['tweet'] = df_selected['tweet'].apply(remove_urls)
+            # Menghapus url
+            text = remove_urls(text)
 
-        # Menghapus mention
-        df_selected['tweet'] = df_selected['tweet'].apply(remove_mentions)
+            # Menghapus mention
+            text = remove_mentions(text)
 
-        # Menghapus hastags
-        df_selected['tweet'] = df_selected['tweet'].apply(remove_hashtags)
+            # Menghapus hastags
+            text = remove_hashtags(text)
 
-        # Menghapus huruf selain a-z
-        df_selected['tweet'] = df_selected['tweet'].apply(remove_non_alphabet)
-         
-        # Menghapus spasi berjarak
-        df_selected['tweet'] = df_selected['tweet'].apply(remove_extra_spaces)
+            # Menghapus huruf selain a-z
+            text = remove_non_alphabet(text)
+            
+            # Menghapus spasi berjarak
+            text = remove_extra_spaces(text)
 
-        # Urutkan berdasarkan kolom 'created_at' dari waktu terlama ke terbaru
-        df_sorted = df_selected.sort_values(by='time', ascending=True)
-        df_sorted.to_csv(os.path.join(
-            'tweets-data-preprocessed', preprocessed_file_name), index=False)
-        cursor.close()
-        connection.close()
-
-        return True
-    else:
-        return False
-
+            processed_data.append((data[0], time, data[2], text, jumlah_mention, ','.join(id_user_mentioned)))
+        else:
+            continue
+    return processed_data
+    
 
 def main():
-    directory = 'tweets-data/'
-    preprocess_csv(directory)
+    # directory = 'tweets-data/'
+    # preprocess_csv(directory)
+    data = ambil_data_kotor()
+    
+    # print(data)
+    preprocessing = preprocess(data)
+    
+    masukan_data_hasil_preprocessed(preprocessing)
     
 
 

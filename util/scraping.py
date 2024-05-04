@@ -60,7 +60,8 @@ def insert_data_to_database(database_connection):
 def main():
     load_dotenv()
     token = os.getenv("TOKEN")
-    scrape_tweets("19-02-2024", "26-03-2024", "pemilu", 500, token)
+    scrape_tweets("19-02-2024", "26-03-2024", "pemilu", 10, token)
+    # insert_data_to_database()
 
 if __name__ == "__main__":
     main()
