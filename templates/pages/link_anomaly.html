@@ -1,5 +1,268 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>ini link anomalys</h1>
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Link Anomaly</h1>
+    </div>
+
+    <div class="d-sm-flex align-items-center justify-content-start mb-4">
+        <input type="number" id="sequenceInput" placeholder="Jumlah Sequence (default: 2)" class="form-control mr-3"
+            style="max-width: 300px;">
+        <button id="startButton" class="btn btn-primary">Mulai</button>
+    </div>
+
+
+    <div class="card shadow mb-4" id="hasilCard" style="display: none;">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Hasil</h6>
+        </div>
+        <div class="card-body">
+            <div id="sequenceDetails" style="display: none;" class="mb-4">
+                <h4>Sequence yang terpilih (sequence ke-<span id="sequenceNumber"></span>)</h4>
+                <h4>Nilai bobot sequence adalah <span id="sequenceValue"></span></h4>
+            </div>
+            <table id="textsTable" class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Text</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer d-flex justify-content-center" style="gap: 10px;">
+            <button id="prevButton" class="btn btn-primary">Previous</button>
+            <span id="pageNumbers" class="pagination"></span> <!-- Placeholder for page numbers -->
+            <button id="nextButton" class="btn btn-primary">Next</button>
+        </div>
+    </div>
+
+    <div class="accordion" id="detailsAccordion" style="display: none;">
+        <div class="accordion-item w-100">
+            <h2 class="accordion-header mx-auto mb-4" id="headingDetails" style="width: fit-content;">
+                <button class="accordion-button btn btn-secondary collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseDetails" aria-expanded="false" aria-controls="collapseDetails">
+                    Lihat Hasil Detail <span class="ms-2">&#x25BC;</span> <!-- Down arrow icon -->
+                </button>
+            </h2>
+            <div id="collapseDetails" class="accordion-collapse collapse" aria-labelledby="headingDetails"
+                data-bs-parent="#detailsAccordion">
+                <div class="accordion-body">
+                    <div class="card shadow mb-4">
+                        <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Perhitungan setiap tahap</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="step">
+                                <h5>Step 1: Basic Stance</h5>
+                                <p>Learn the basic stance and movements. Essential for foundation.</p>
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Action</th>
+                                            <th>Key Combination</th>
+                                            <th>Effect</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Basic Slash</td>
+                                            <td>X + A</td>
+                                            <td>Initiates combat sequence.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="step">
+                                <h5>Step 2: Spirit Blade</h5>
+                                <p>Charge your spirit gauge by landing consecutive hits.</p>
+                                <div class="card-body">
+                                    <div class="chart-area">
+                                        <canvas id="myAreaChart"></canvas>
+                                    </div>
+                                </div>
+                                <p><strong>Formula:</strong> \( \text{Gauge Increase} = \text{Hits} \times 0.15 \)</p>
+                            </div>
+                            <div class="step">
+                                <h5>Step 3: Foresight Slash</h5>
+                                <p>Master the Foresight Slash to counterattack and increase gauge.</p>
+                                <p><strong>Timing:</strong> Execute right after an enemy attack.</p>
+                                <p><strong>Success Rate:</strong> \( \frac{\text{Timing Precision}}{\text{Attack Speed}}
+                                    \)</p>
+                            </div>
+                            <div class="step">
+                                <h5>Step 4: Helmbreaker</h5>
+                                <p>Use the Helmbreaker for maximum damage. Requires full spirit gauge.</p>
+                                <p><strong>Damage Output:</strong> \( \text{Base Damage} \times 1.5 + \text{Spirit
+                                    Level} \times 20 \)</p>
+                            </div>
+                            <div class="step">
+                                <h5>Step 5: Continuous Improvement</h5>
+                                <p>Practice to maintain gauge and optimize slash patterns.</p>
+                                <p><strong>Training Regimen:</strong> 30 minutes daily on training pole.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+{% endblock %}
+
+{% block javascript %}
+
+
+<!-- Include Bootstrap Bundle with Popper (includes Bootstrap JS) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Page level plugins -->
+<script src="vendor/chart.js/Chart.min.js"></script>
+
+<!-- Page level custom scripts -->
+<script src="js/demo/chart-area-demo.js"></script>
+<script src="js/demo/chart-pie-demo.js"></script>
+
+<!-- <script>
+
+    document.getElementById("startButton").addEventListener("click", function () {
+        var sequence = document.getElementById("sequenceInput").value || 2;
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/run_link_anomaly?sequence=" + sequence, true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                const result = JSON.parse(xhr.responseText);
+                console.log("Received response:", result);
+
+                // Update sequence number and value
+                document.getElementById("sequenceNumber").innerText = result.sequence_number;
+                document.getElementById("sequenceValue").innerText = result.sequence_value.toFixed(2); // formatting to 2 decimal places
+
+                // Display the sequence details
+                document.getElementById("sequenceDetails").style.display = "block";
+
+                // Handle the sequence texts
+                if (Array.isArray(result.sequence_text)) {
+                    const tableBody = document.getElementById("textsTable").getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = '';
+
+                    result.sequence_text.forEach((text, index) => {
+                        let row = tableBody.insertRow();
+                        let cell1 = row.insertCell(0);
+                        let cell2 = row.insertCell(1);
+                        cell1.innerHTML = index + 1;
+                        cell2.innerHTML = text;
+                    });
+
+                    document.getElementById("hasilCard").style.display = "block";
+                } else {
+                    console.error("sequence_text is not an array:", result.sequence_text);
+                }
+            }
+        };
+        xhr.send();
+    });
+
+</script> -->
+<script>
+    let currentPage = 1;
+    const rowsPerPage = 5; // Adjust as needed
+    const numPagesToShow = 6; // Maximum number of pages to display in the paginator
+    let totalPages = 0; // Declaring this variable at a higher scope
+
+    document.getElementById("startButton").addEventListener("click", function () {
+        var sequence = document.getElementById("sequenceInput").value || 2;
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/run_link_anomaly?sequence=" + sequence, true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                const result = JSON.parse(xhr.responseText);
+                window.texts = result.sequence_text;
+                totalPages = Math.ceil(result.sequence_text.length / rowsPerPage);
+
+                // Ensure the sequence details are updated and displayed
+                document.getElementById("sequenceNumber").innerText = result.sequence_number;
+                document.getElementById("sequenceValue").innerText = result.sequence_value.toFixed(2);
+                document.getElementById("sequenceDetails").style.display = "block"; // Make sure this is visible
+
+                displayPage(1);
+                document.getElementById("hasilCard").style.display = "block";
+                document.getElementById("detailsAccordion").style.display = "block";
+            }
+        };
+        xhr.send();
+    });
+    function displayPage(page) {
+        const tableBody = document.getElementById("textsTable").getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        window.texts.slice(start, end).forEach((text, index) => {
+            let row = tableBody.insertRow();
+            let cell1 = row.insertCell(0);
+            let cell2 = row.insertCell(1);
+            cell1.innerHTML = start + index + 1;
+            cell2.innerHTML = text;
+        });
+        currentPage = page;
+        updatePagination();
+        updateButtons();
+    }
+
+    function updatePagination() {
+        const pageNumbers = document.getElementById("pageNumbers");
+        pageNumbers.innerHTML = ''; // Clear previous buttons
+
+        const maxLeft = (currentPage - Math.floor(numPagesToShow / 2));
+        const maxRight = (currentPage + Math.floor(numPagesToShow / 2));
+
+        if (maxLeft > 1) {
+            pageNumbers.appendChild(createPageButton(1, '<<')); // Add first page button
+            pageNumbers.appendChild(createEllipsis());
+        }
+
+        for (let page = Math.max(1, maxLeft); page <= Math.min(totalPages, maxRight); page++) {
+            pageNumbers.appendChild(createPageButton(page, page));
+        }
+
+        if (maxRight < totalPages) {
+            pageNumbers.appendChild(createEllipsis());
+            pageNumbers.appendChild(createPageButton(totalPages, '>>')); // Add last page button
+        }
+    }
+
+    function createPageButton(page, text) {
+        let btn = document.createElement("button");
+        btn.innerText = text;
+        btn.className = "page-btn btn btn-outline-primary" + (page === currentPage ? " active" : "");
+        btn.addEventListener("click", () => displayPage(page));
+        return btn;
+    }
+
+    function createEllipsis() {
+        let span = document.createElement("span");
+        span.innerHTML = "...";
+        span.className = "mx-2"; // Margin for spacing
+        return span;
+    }
+
+    function updateButtons() {
+        document.getElementById("prevButton").disabled = currentPage === 1;
+        document.getElementById("nextButton").disabled = currentPage === totalPages;
+        document.getElementById("prevButton").addEventListener("click", function () {
+            if (currentPage > 1) displayPage(currentPage - 1);
+        });
+        document.getElementById("nextButton").addEventListener("click", function () {
+            if (currentPage < totalPages) displayPage(currentPage + 1);
+        });
+    }
+</script>
+
+
+
 {% endblock %}

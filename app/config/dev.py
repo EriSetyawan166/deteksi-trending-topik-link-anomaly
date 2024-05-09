@@ -4,12 +4,20 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-ENV_FILE_PATH = BASE_DIR / ".env.dev"
+ENV_FILE_PATH = BASE_DIR / ".env"
 load_dotenv(ENV_FILE_PATH)
 
 # Flask
 SECRET_KEY = os.environ.get("SECRET_KEY", "YOUR-FALLBACK-SECRET-KEY")
-DATABASE_URI = "sqlite:///database.db"
+
+# MySQL database configuration
+MYSQL_HOST = os.environ["DB_HOST"]
+MYSQL_USER = os.environ["DB_USER"]
+MYSQL_PASSWORD = os.environ["DB_PASSWORD"]
+MYSQL_DATABASE = os.environ["DB_DATABASE"]
+
+DATABASE_URI = f"mysql+mysqlconnector://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DATABASE}"
+
 # Ratelimit
 RATELIMIT_ENABLED = os.environ.get("RATELIMIT_ENABLED", "False") == "True"
 RATELIMIT_STORAGE_URI = os.environ.get("RATELIMIT_STORAGE_URI", "memory://")

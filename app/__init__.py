@@ -1,5 +1,6 @@
 # Flask modules
 from flask import Flask
+import mysql.connector
 
 # Other modules
 import os
@@ -30,6 +31,18 @@ def create_app(debug: bool = False):
         from app.config.prod import ProdConfig
 
         app.config.from_object(ProdConfig)
+
+    app.config['MYSQL_HOST'] = os.environ["DB_HOST"]
+    app.config['MYSQL_USER'] = os.environ["DB_USER"]
+    app.config['MYSQL_PASSWORD'] = os.environ["DB_PASSWORD"]
+    app.config['MYSQL_DATABASE'] = os.environ["DB_DATABASE"]
+
+    db = mysql.connector.connect(
+        host=app.config['MYSQL_HOST'],
+        user=app.config['MYSQL_USER'],
+        password=app.config['MYSQL_PASSWORD'],
+        database=app.config['MYSQL_DATABASE']
+    )
 
     # Uncomment to enable logger
     # from app.utils.logger import setup_flask_logger
