@@ -12,7 +12,6 @@
         <button id="startButton" class="btn btn-primary">Mulai</button>
     </div>
 
-
     <div class="card shadow mb-4" id="hasilCard" style="display: none;">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Hasil</h6>
@@ -20,23 +19,21 @@
         <div class="card-body">
             <div id="sequenceDetails" style="display: none;" class="mb-4">
                 <h4>Sequence yang terpilih (sequence ke-<span id="sequenceNumber"></span>)</h4>
+                <h4>Pada waktu <span id="sequenceTime"></h4>
                 <h4>Nilai bobot sequence adalah <span id="sequenceValue"></span></h4>
             </div>
-            <table id="textsTable" class="table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Text</th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
-        </div>
-        <div class="card-footer d-flex justify-content-center" style="gap: 10px;">
-            <button id="prevButton" class="btn btn-primary">Previous</button>
-            <span id="pageNumbers" class="pagination"></span> <!-- Placeholder for page numbers -->
-            <button id="nextButton" class="btn btn-primary">Next</button>
+            <div style="overflow-y: auto; max-height: 400px;">
+                <table id="textsTable" class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Text</th>
+                        </tr>
+                    </thead>
+                    <tbody style="max-height: 400px">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -51,61 +48,201 @@
             <div id="collapseDetails" class="accordion-collapse collapse" aria-labelledby="headingDetails"
                 data-bs-parent="#detailsAccordion">
                 <div class="accordion-body">
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">Perhitungan Link Anomaly</h1>
+                    </div>
                     <div class="card shadow mb-4">
                         <div class=" card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Perhitungan setiap tahap</h6>
+                            <h6 class="m-0 font-weight-bold text-primary">Menghitung Probabilitas Sejumlah Mention</h6>
                         </div>
                         <div class="card-body">
-                            <div class="step">
-                                <h5>Step 1: Basic Stance</h5>
-                                <p>Learn the basic stance and movements. Essential for foundation.</p>
+                            <h4>Rumus</h4>
+                            <div class="w-100 mb-4">
+                                <img class="m-auto" src="img/rumus_menghitung_probabilitas_mention.png" alt="">
+                            </div>
+                            <select id="sequenceSelector" class="form-control mb-3 w-auto">
+                                <option selected>Select a Sequence</option>
+                                <!-- Options will be populated dynamically by JavaScript -->
+                            </select>
+                            <div style="max-height: 400px; overflow-y: auto;">
                                 <table class="table">
                                     <thead>
                                         <tr>
-                                            <th>Action</th>
-                                            <th>Key Combination</th>
-                                            <th>Effect</th>
+                                            <th>#</th>
+                                            <th>Username</th>
+                                            <th>Text</th>
+                                            <th>Probability</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Basic Slash</td>
-                                            <td>X + A</td>
-                                            <td>Initiates combat sequence.</td>
-                                        </tr>
+                                    <tbody id="probabilityTable">
+                                        <!-- Content filled by JavaScript -->
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="step">
-                                <h5>Step 2: Spirit Blade</h5>
-                                <p>Charge your spirit gauge by landing consecutive hits.</p>
-                                <div class="card-body">
-                                    <div class="chart-area">
-                                        <canvas id="myAreaChart"></canvas>
-                                    </div>
-                                </div>
-                                <p><strong>Formula:</strong> \( \text{Gauge Increase} = \text{Hits} \times 0.15 \)</p>
-                            </div>
-                            <div class="step">
-                                <h5>Step 3: Foresight Slash</h5>
-                                <p>Master the Foresight Slash to counterattack and increase gauge.</p>
-                                <p><strong>Timing:</strong> Execute right after an enemy attack.</p>
-                                <p><strong>Success Rate:</strong> \( \frac{\text{Timing Precision}}{\text{Attack Speed}}
-                                    \)</p>
-                            </div>
-                            <div class="step">
-                                <h5>Step 4: Helmbreaker</h5>
-                                <p>Use the Helmbreaker for maximum damage. Requires full spirit gauge.</p>
-                                <p><strong>Damage Output:</strong> \( \text{Base Damage} \times 1.5 + \text{Spirit
-                                    Level} \times 20 \)</p>
-                            </div>
-                            <div class="step">
-                                <h5>Step 5: Continuous Improvement</h5>
-                                <p>Practice to maintain gauge and optimize slash patterns.</p>
-                                <p><strong>Training Regimen:</strong> 30 minutes daily on training pole.</p>
+                        </div>
+                    </div>
+
+                    <div class="card shadow mb-4">
+                        <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Menghitung Probabilitas User</h6>
+                        </div>
+                        <div class="card-body">
+                            <h4>Rumus</h4>
+                            <img src="img/rumus_menghitung_probabilitas_user.png" alt="">
+                            <select id="userSequenceSelector" class="form-control mb-3 w-auto">
+                                <option selected>Pilih Sequence</option>
+                                <!-- Options will be populated dynamically by JavaScript -->
+                            </select>
+                            <div style="max-height: 400px; overflow-y: auto;">
+                                <table class="table" style="table-layout: fixed;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 5%;">#</th>
+                                            <th>Text</th>
+                                            <th>Mentions</th>
+                                            <th style="width: 20%;">Probability</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="userProbabilityTable">
+                                        <!-- Content filled by JavaScript -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
+
+                    <div class="card shadow mb-4">
+                        <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Menghitung Skor Link Anomaly</h6>
+                        </div>
+                        <div class="card-body">
+                            <h4>Rumus</h4>
+                            <img src="img/rumus_menghitung_skor_link_anomaly.png" class="mb-4" alt="">
+                            <select id="skorLinkAnomalySequenceSelector" class="form-control mb-3 w-auto">
+                                <option selected>Pilih Sequence</option>
+                                <!-- Options will be populated dynamically by JavaScript -->
+                            </select>
+                            <div style="max-height: 400px; overflow-y: auto;">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Text</th>
+                                            <th>Skor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="skorLinkAnomalyTable">
+                                        <!-- Content filled by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow mb-4">
+                        <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Menghitung Agregasi Skor Link Anomaly</h6>
+                        </div>
+                        <div class="card-body">
+                            <h4>Rumus</h4>
+                            <img src="img/rumus_menghitung_agregasi_skor_link_anomaly.png" class="mb-4" alt="">
+                            <select id="agregasiSkorLinkAnomalySequenceSelector" class="form-control mb-3 w-auto">
+                                <option selected>Pilih Sequence</option>
+                                <!-- Options will be populated dynamically by JavaScript -->
+                            </select>
+                            <div style="max-height: 400px; overflow-y: auto;">
+                                <table class="table" style="table-layout: fixed;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 15%;">diskrit time ke-n</th>
+                                            <th>Skor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="agregasiSkorLinkAnomalyTable">
+                                        <!-- Content filled by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow mb-4">
+                        <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Menyeleksi Agregasi Skor Link Anomaly</h6>
+                        </div>
+                        <div class="card-body">
+                            <p>Hanya diskrit dengan nilai agregasi skor link di atas threshold burst yang akan menjadi
+                                titik/state pada proses deteksi trending topik</p>
+                            <h4>threshold burst=0,9995</h4>
+                            <select id="seleksiAgregasiSkorLinkAnomalySequenceSelector"
+                                class="form-control mb-3 w-auto">
+                                <option selected>Pilih Sequence</option>
+                                <!-- Options will be populated dynamically by JavaScript -->
+                            </select>
+                            <div style="max-height: 400px; overflow-y: auto;">
+                                <table class="table" style="table-layout: fixed;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 15%;">diskrit time ke-n</th>
+                                            <th>Skor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="seleksiAgregasiSkorLinkAnomalyTable">
+                                        <!-- Content filled by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow mb-4">
+                        <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Menghitung Cost Function</h6>
+                        </div>
+                        <div class="card-body">
+                            <h4>Rumus</h4>
+                            <img src="img/rumus_menghitung_cost_function.png" alt="">
+                            <div style="max-height: 400px; overflow-y: auto;">
+                                <table class="table" id="costFunctionTable">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 15%;">Sequence</th>
+                                            <th>Cost</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Content filled by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow mb-4">
+                        <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Hasil Akhir</h6>
+                        </div>
+                        <div class="card-body">
+                            <p>Sequence yang memiliki nilai minimum terindikasi berisi trending topic</p>
+                            <h4>Sequence yang terpilih (sequence ke-<span id="sequenceNumberHasilAkhir"></span>)</h4>
+                            <h4>Pada waktu <span id="sequenceTimeHasilAkhir"></h4>
+                            <h4>Nilai bobot sequence adalah <span id="sequenceValueHasilAkhir"></span></h4>
+                            <div style="max-height: 400px; overflow-y: auto;">
+                                <table class="table" id="hasilAkhirTable">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Text</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Content filled by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -119,7 +256,8 @@
 
 
 <!-- Include Bootstrap Bundle with Popper (includes Bootstrap JS) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src=" https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js">
+</script>
 
 <!-- Page level plugins -->
 <script src="vendor/chart.js/Chart.min.js"></script>
@@ -128,52 +266,14 @@
 <script src="js/demo/chart-area-demo.js"></script>
 <script src="js/demo/chart-pie-demo.js"></script>
 
-<!-- <script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.2.1/decimal.min.js"></script>
 
-    document.getElementById("startButton").addEventListener("click", function () {
-        var sequence = document.getElementById("sequenceInput").value || 2;
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", "/run_link_anomaly?sequence=" + sequence, true);
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                const result = JSON.parse(xhr.responseText);
-                console.log("Received response:", result);
-
-                // Update sequence number and value
-                document.getElementById("sequenceNumber").innerText = result.sequence_number;
-                document.getElementById("sequenceValue").innerText = result.sequence_value.toFixed(2); // formatting to 2 decimal places
-
-                // Display the sequence details
-                document.getElementById("sequenceDetails").style.display = "block";
-
-                // Handle the sequence texts
-                if (Array.isArray(result.sequence_text)) {
-                    const tableBody = document.getElementById("textsTable").getElementsByTagName('tbody')[0];
-                    tableBody.innerHTML = '';
-
-                    result.sequence_text.forEach((text, index) => {
-                        let row = tableBody.insertRow();
-                        let cell1 = row.insertCell(0);
-                        let cell2 = row.insertCell(1);
-                        cell1.innerHTML = index + 1;
-                        cell2.innerHTML = text;
-                    });
-
-                    document.getElementById("hasilCard").style.display = "block";
-                } else {
-                    console.error("sequence_text is not an array:", result.sequence_text);
-                }
-            }
-        };
-        xhr.send();
-    });
-
-</script> -->
 <script>
+    let result = {};
     let currentPage = 1;
-    const rowsPerPage = 5; // Adjust as needed
-    const numPagesToShow = 6; // Maximum number of pages to display in the paginator
-    let totalPages = 0; // Declaring this variable at a higher scope
+    const rowsPerPage = 5;
+    const numPagesToShow = 6;
+    let totalPages = 0;
 
     document.getElementById("startButton").addEventListener("click", function () {
         var sequence = document.getElementById("sequenceInput").value || 2;
@@ -181,88 +281,230 @@
         xhr.open("GET", "/run_link_anomaly?sequence=" + sequence, true);
         xhr.onreadystatechange = function () {
             if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                const result = JSON.parse(xhr.responseText);
+                result = JSON.parse(xhr.responseText);
                 window.texts = result.sequence_text;
+                const formattedTime = formatSequenceTimes(result.waktu_sequence_terpilih);
                 totalPages = Math.ceil(result.sequence_text.length / rowsPerPage);
 
-                // Ensure the sequence details are updated and displayed
                 document.getElementById("sequenceNumber").innerText = result.sequence_number;
+                document.getElementById("sequenceTime").innerText = formattedTime;
                 document.getElementById("sequenceValue").innerText = result.sequence_value.toFixed(2);
-                document.getElementById("sequenceDetails").style.display = "block"; // Make sure this is visible
-
-                displayPage(1);
+                document.getElementById("sequenceDetails").style.display = "block";
+                document.getElementById('sequenceNumberHasilAkhir').innerText = result.sequence_number;
+                document.getElementById('sequenceTimeHasilAkhir').innerText = formattedTime;
+                document.getElementById('sequenceValueHasilAkhir').innerText = result.sequence_value.toFixed(2);
                 document.getElementById("hasilCard").style.display = "block";
                 document.getElementById("detailsAccordion").style.display = "block";
+
+                updateTextsTable(result.sequence_text);
+                populateSequenceDropdown(result.probabilitas_mention_keseluruhan, 'sequenceSelector', populateProbabilityTable);
+                populateSequenceDropdown(result.probabilitas_user_keseluruhan, 'userSequenceSelector', populateUserProbabilityTable);
+                populateSequenceDropdown(result.skor_link_anomaly_keseluruhan, 'skorLinkAnomalySequenceSelector', populateLinkAnomalyScoreTable);
+                populateSequenceDropdown(result.agregasi_skor_link_anomaly_keseluruhan, 'agregasiSkorLinkAnomalySequenceSelector', populateAggregatedScoresTable);
+                populateSequenceDropdown(result.seleksi_agregasi_skor_link_anomaly_keseluruhan, 'seleksiAgregasiSkorLinkAnomalySequenceSelector', populateSeleksiAgregasiSkorLinkAnomalyTable);
+                populateCostFunctionTable(result.cost_function);
+                updateHasilAkhir(result.sequence_text, result.sequence_number, result.sequence_value);
             }
         };
         xhr.send();
     });
-    function displayPage(page) {
-        const tableBody = document.getElementById("textsTable").getElementsByTagName('tbody')[0];
+
+    document.getElementById("sequenceSelector").addEventListener('change', function () {
+        const selectedSequence = this.value;
+        if (selectedSequence !== "Select a Sequence") {
+            const sequenceData = result.probabilitas_mention_keseluruhan[selectedSequence];
+            populateProbabilityTable(sequenceData);
+            document.getElementById("sequenceNumber").innerText = parseInt(selectedSequence) + 1;
+        }
+    });
+
+    document.getElementById("userSequenceSelector").addEventListener('change', function () {
+        const selectedSequence = this.value;
+        if (selectedSequence !== "Pilih Sequence") {
+            const userData = result.probabilitas_user_keseluruhan[selectedSequence];
+            populateUserProbabilityTable(userData);
+        }
+    });
+
+    document.getElementById("skorLinkAnomalySequenceSelector").addEventListener('change', function () {
+        const selectedSequence = this.value;
+        if (selectedSequence !== "Pilih Sequence") {
+            const scoreData = result.skor_link_anomaly_keseluruhan[selectedSequence];
+            populateLinkAnomalyScoreTable(scoreData);
+        }
+    });
+
+    document.getElementById("agregasiSkorLinkAnomalySequenceSelector").addEventListener('change', function () {
+        const selectedSequence = this.value;
+        if (selectedSequence !== "Pilih Sequence") {
+            const aggregatedScores = result.agregasi_skor_link_anomaly_keseluruhan[selectedSequence];
+            populateAggregatedScoresTable(aggregatedScores);
+        }
+    });
+
+    document.getElementById("seleksiAgregasiSkorLinkAnomalySequenceSelector").addEventListener('change', function () {
+        const selectedSequence = this.value;
+        if (selectedSequence !== "Pilih Sequence") {
+            const seleksiData = result.seleksi_agregasi_skor_link_anomaly_keseluruhan[selectedSequence];
+            populateSeleksiAgregasiSkorLinkAnomalyTable(seleksiData);
+        }
+    });
+
+    function updateTextsTable(texts) {
+        const tableBody = document.getElementById('textsTable').getElementsByTagName('tbody')[0];
         tableBody.innerHTML = '';
-        const start = (page - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        window.texts.slice(start, end).forEach((text, index) => {
+        texts.forEach((text, index) => {
             let row = tableBody.insertRow();
-            let cell1 = row.insertCell(0);
-            let cell2 = row.insertCell(1);
-            cell1.innerHTML = start + index + 1;
-            cell2.innerHTML = text;
+            let cellIndex = row.insertCell(0);
+            let cellText = row.insertCell(1);
+            cellIndex.innerHTML = index + 1;
+            cellText.innerHTML = text;
         });
-        currentPage = page;
-        updatePagination();
-        updateButtons();
     }
 
-    function updatePagination() {
-        const pageNumbers = document.getElementById("pageNumbers");
-        pageNumbers.innerHTML = ''; // Clear previous buttons
+    function populateSequenceDropdown(sequences, selectorId, populateTableFunction) {
+        const selector = document.getElementById(selectorId);
+        selector.innerHTML = ''; // Clear existing options
 
-        const maxLeft = (currentPage - Math.floor(numPagesToShow / 2));
-        const maxRight = (currentPage + Math.floor(numPagesToShow / 2));
+        Object.keys(sequences).forEach((key, index) => {
+            let option = new Option(`Sequence ${index + 1}`, key);
+            selector.add(option);
+        });
 
-        if (maxLeft > 1) {
-            pageNumbers.appendChild(createPageButton(1, '<<')); // Add first page button
-            pageNumbers.appendChild(createEllipsis());
-        }
-
-        for (let page = Math.max(1, maxLeft); page <= Math.min(totalPages, maxRight); page++) {
-            pageNumbers.appendChild(createPageButton(page, page));
-        }
-
-        if (maxRight < totalPages) {
-            pageNumbers.appendChild(createEllipsis());
-            pageNumbers.appendChild(createPageButton(totalPages, '>>')); // Add last page button
+        if (Object.keys(sequences).length > 0) {
+            selector.value = Object.keys(sequences)[0];
+            populateTableFunction(sequences[Object.keys(sequences)[0]]);
         }
     }
 
-    function createPageButton(page, text) {
-        let btn = document.createElement("button");
-        btn.innerText = text;
-        btn.className = "page-btn btn btn-outline-primary" + (page === currentPage ? " active" : "");
-        btn.addEventListener("click", () => displayPage(page));
-        return btn;
+    function populateProbabilityTable(probabilities) {
+        const table = document.getElementById("probabilityTable");
+        table.innerHTML = "";
+        probabilities.forEach((item, index) => {
+            const username = item[0];
+            const text = item[1];
+            const probability = item[2];
+            let row = table.insertRow();
+            let cellIndex = row.insertCell(0);
+            let cellUsername = row.insertCell(1);
+            let cellText = row.insertCell(2);
+            let cellProb = row.insertCell(3);
+            let decimalValue = new Decimal(probability);
+            cellIndex.innerHTML = index + 1;
+            cellUsername.innerHTML = username;
+            cellText.innerHTML = text;
+            cellProb.innerHTML = decimalValue.toFixed(decimalValue.decimalPlaces());
+        });
     }
 
-    function createEllipsis() {
-        let span = document.createElement("span");
-        span.innerHTML = "...";
-        span.className = "mx-2"; // Margin for spacing
-        return span;
+    function populateUserProbabilityTable(userProbabilities) {
+        console.log("Populating user probabilities table with:", userProbabilities);
+        const table = document.getElementById("userProbabilityTable");
+        table.innerHTML = "";
+        userProbabilities.forEach((item, index) => {
+            const text = item[0];
+            const mentions = item[1];
+            const probability = item[2];
+            let row = table.insertRow();
+            let cellIndex = row.insertCell(0);
+            let cellText = row.insertCell(1);
+            let cellMentions = row.insertCell(2);
+            let cellProb = row.insertCell(3);
+            let decimalValue = new Decimal(probability);
+            cellIndex.innerHTML = index + 1;
+            cellText.innerHTML = text;
+            cellMentions.innerHTML = mentions;
+            cellProb.innerHTML = decimalValue.toFixed(decimalValue.decimalPlaces());
+        });
     }
 
-    function updateButtons() {
-        document.getElementById("prevButton").disabled = currentPage === 1;
-        document.getElementById("nextButton").disabled = currentPage === totalPages;
-        document.getElementById("prevButton").addEventListener("click", function () {
-            if (currentPage > 1) displayPage(currentPage - 1);
+    function populateLinkAnomalyScoreTable(scoreData) {
+        const table = document.getElementById("skorLinkAnomalyTable");
+        table.innerHTML = "";
+        scoreData.forEach((item, index) => {
+            let row = table.insertRow();
+            let cellIndex = row.insertCell(0);
+            let cellText = row.insertCell(1);
+            let cellScore = row.insertCell(2);
+            let decimalValue = new Decimal(item[1]);
+            cellIndex.innerHTML = index + 1;
+            cellText.innerHTML = item[0];
+            cellScore.innerHTML = decimalValue.toFixed(decimalValue.decimalPlaces());
         });
-        document.getElementById("nextButton").addEventListener("click", function () {
-            if (currentPage < totalPages) displayPage(currentPage + 1);
+    }
+
+    function populateAggregatedScoresTable(scores) {
+        const table = document.getElementById("agregasiSkorLinkAnomalyTable");
+        table.innerHTML = "";
+        scores.forEach((score, index) => {
+            let row = table.insertRow();
+            let cellIndex = row.insertCell(0);
+            let cellScore = row.insertCell(1);
+            let decimalValue = new Decimal(score);
+            cellIndex.innerHTML = index + 1;
+            cellScore.innerHTML = decimalValue.toFixed(decimalValue.decimalPlaces());
         });
+    }
+
+
+    function populateSeleksiAgregasiSkorLinkAnomalyTable(seleksiData) {
+        const table = document.getElementById("seleksiAgregasiSkorLinkAnomalyTable");
+        table.innerHTML = "";
+        seleksiData.forEach((item) => {
+            item.forEach((subItem) => {
+                let row = table.insertRow();
+                let cellDiskritTime = row.insertCell(0);
+                let cellScore = row.insertCell(1);
+                let decimalValue = new Decimal(subItem[1]);
+                cellDiskritTime.innerHTML = subItem[0];
+                cellScore.innerHTML = parseFloat(decimalValue).toFixed(decimalValue.decimalPlaces());
+            });
+        });
+    }
+
+    function populateCostFunctionTable(costFunctionData) {
+        const tableBody = document.getElementById("costFunctionTable").getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = "";
+
+        costFunctionData.forEach((item, index) => {
+            let row = tableBody.insertRow();
+            let cellSequence = row.insertCell(0);
+            let cellCost = row.insertCell(1);
+            let decimalValue = new Decimal(item[1]);
+            cellSequence.innerHTML = index + 1;
+            cellCost.innerHTML = parseFloat(decimalValue).toFixed(decimalValue.decimalPlaces());
+        });
+    }
+
+    function updateHasilAkhir(sequenceData, sequenceNumber, sequenceValue) {
+        const tableBody = document.getElementById('hasilAkhirTable').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+
+        sequenceData.forEach((text, index) => {
+            let row = tableBody.insertRow();
+            let cellIndex = row.insertCell(0);
+            let cellText = row.insertCell(1);
+
+            cellIndex.innerHTML = index + 1;
+            cellText.innerHTML = text;
+        });
+    }
+
+    function formatSequenceTimes(times) {
+        return times.map(time => {
+            const date = new Date(time);
+            return date.toLocaleString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).replace(/,/g, '').replace(/(\d+)\.(\d+)\.(\d+)/g, '$1:$2:$3');
+        }).join(' - ');
     }
 </script>
-
-
 
 {% endblock %}

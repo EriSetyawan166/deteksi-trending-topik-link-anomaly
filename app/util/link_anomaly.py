@@ -3,6 +3,7 @@ import locale
 # from db_operation import ambil_data_bersih
 import numpy as np
 
+
 def hitung_total_mention(data):
     """
     Menghitung total jumlah mention dari dataset.
@@ -105,11 +106,11 @@ def hitung_skor_link_anomaly(hasil_probabilitas_mention, hasil_probabilitas_ment
 def hitung_selisih_waktu(waktu1, waktu2):
     """
     Menghitung selisih waktu antara dua waktu.
-    Parameters: 
+    Parameters:
         waktu1 (datetime.time) : waktu pertama
         waktu2 (datetime.time) : waktu kedua
 
-    Returns: 
+    Returns:
         int: hasil selisih kedua waktu dalam detik
     """
     selisih = abs(waktu2 - waktu1)
@@ -166,7 +167,7 @@ def hitung_cost_function(cleaned_agregasi_skor_link_anomaly, p=0.3, alpha_burst=
         cleaned_agregasi_skor_link_anomaly (list of float): agregasi skor link anomaly yang sudah dibersihkan
         selang_waktu (int) = selang waktu kemunculan antar skor agregasi pada sequence
         p (float, opsional) = probabilitas kemunculan. default 0.3
-        alpha burst (float, optional) = alpha burst. default 0.01 
+        alpha burst (float, optional) = alpha burst. default 0.01
 
     Returns:
         float: hasil cost function
@@ -225,6 +226,25 @@ def ambil_teks_dari_sequence(sequences, sequence_index):
     return teks_dari_sequence
 
 
+def ambil_waktu_dari_sequence(sequences, sequence_index):
+    """
+    Mengambil waktu dari sequence yang spesifik berdasarkan indeks.
+
+    Parameters:
+        sequences (list of list): List yang berisi data per sequence.
+        sequence_index (int): Indeks dari sequence yang cost function-nya paling rendah.
+
+    Returns:
+        list: List yang berisi waktu dari sequence terpilih.
+    """
+    result = []
+    sequence_terpilih = sequences[sequence_index - 1]
+
+    teks_dari_sequence = [data[1] for data in sequence_terpilih]
+    result = [teks_dari_sequence[0], teks_dari_sequence[-1]]
+    return result
+
+
 def link_anomaly(data, sequence=2):
     """
     Fungsi utama dari link anomaly
@@ -235,6 +255,11 @@ def link_anomaly(data, sequence=2):
     sequences = []
     agregasi_skor_anomaly_per_sequence = []
     cleaned_agregasi_skor_anomaly_per_sequence = []
+    probabilitas_mention_keseluruhan = {}
+    probabilitas_mention_user_keseluruhan = {}
+    skor_link_anomaly_keseluruhan = {}
+    agregasi_skor_link_anomaly_keseluruhan = {}
+    seleksi_agregasi_skor_link_anomaly_keseluruhan = {}
     total_data = len(data)
 
     # memecahkan data menjadi per sequence
@@ -247,6 +272,21 @@ def link_anomaly(data, sequence=2):
 
     # perulangan per sequence
     for index, sequence in enumerate(sequences):
+        if index not in probabilitas_mention_keseluruhan:
+            probabilitas_mention_keseluruhan[index] = []
+
+        if index not in probabilitas_mention_user_keseluruhan:
+            probabilitas_mention_user_keseluruhan[index] = []
+
+        if index not in skor_link_anomaly_keseluruhan:
+            skor_link_anomaly_keseluruhan[index] = []
+
+        if index not in agregasi_skor_link_anomaly_keseluruhan:
+            agregasi_skor_link_anomaly_keseluruhan[index] = []
+
+        if index not in seleksi_agregasi_skor_link_anomaly_keseluruhan:
+            seleksi_agregasi_skor_link_anomaly_keseluruhan[index] = []
+
         probabilitas_mention_user = 0
         hasil_skor_link_anomaly_bersih = []
         waktu_sebelum = sequence[0][1]
@@ -255,13 +295,15 @@ def link_anomaly(data, sequence=2):
         total_data_per_sequence = len(sequence)
         total_mention = hitung_total_mention(sequence)
 
-        # perulangan data
         for i, data in enumerate(sequence):
             waktu_sekarang = data[1]
-
             # menghitung probabilitas mention
             probabilitas_mention = hitung_probabilitas_mention(
                 total_data_per_sequence, total_mention, data[4])
+
+            probabilitas_mention_keseluruhan[index].append(
+                (data[3], data[2], probabilitas_mention))
+
             nilai_v = data[5]
             nilai_v_list = nilai_v.split(',')
 
@@ -274,12 +316,19 @@ def link_anomaly(data, sequence=2):
                 probabilitas_mention_user += hitung_probabilitas_mention_user(
                     total_mention_user[mention], total_mention)
 
+            probabilitas_mention_user_keseluruhan[index].append(
+                (data[3], data[5], probabilitas_mention_user))
+
             # menghitung skor link anomaly
             skor_link_anomaly = hitung_skor_link_anomaly(
                 probabilitas_mention, probabilitas_mention_user)
             probabilitas_mention_user = 0
 
             hasil_skor_link_anomaly.append(skor_link_anomaly)
+
+            skor_link_anomaly_keseluruhan[index].append(
+                (data[3], skor_link_anomaly)
+            )
 
             if i % 2 != 0:
                 selisih = hitung_selisih_waktu(waktu_sebelum, waktu_sekarang)
@@ -307,12 +356,26 @@ def link_anomaly(data, sequence=2):
         for diskrit in hasil_skor_link_anomaly_bersih:
             ambil_skor_link_anomaly = diskrit[:-1]
             tau = diskrit[-1]
+            hasil_agregasi_skor_anomaly = hitung_agregasi_skor_link_anomaly(
+                ambil_skor_link_anomaly, tau)
             agregasi_skor_anomaly_per_diskrit.append(
-                hitung_agregasi_skor_link_anomaly(ambil_skor_link_anomaly, tau))
+                hasil_agregasi_skor_anomaly)
+
+            agregasi_skor_link_anomaly_keseluruhan[index].append(
+                (hasil_agregasi_skor_anomaly[0])
+            )
 
         # membuat agregasi skor anomaly per-sequence
         agregasi_skor_anomaly_per_sequence.append(
             (index+1, agregasi_skor_anomaly_per_diskrit))
+
+    for sequence_id, scores in agregasi_skor_anomaly_per_sequence:
+        score_above_0_9 = [(index, score) for index, (score, _) in enumerate(
+            scores, start=1) if score > 0.9]
+
+        seleksi_agregasi_skor_link_anomaly_keseluruhan[sequence_id - 1].append(
+            (score_above_0_9)
+        )
 
     # membersihkan agregasi skor anomaly
     cleaned_agregasi_skor_anomaly_per_sequence.append(
@@ -330,15 +393,19 @@ def link_anomaly(data, sequence=2):
     teks_dari_sequence_terpilih = ambil_teks_dari_sequence(
         sequences, result_cost_function_minimum[0])
 
-    return result_cost_function_minimum, teks_dari_sequence_terpilih
+    waktu_dari_sequence_terpilih = ambil_waktu_dari_sequence(
+        sequences, result_cost_function_minimum[0])
+    # print(waktu_dari_sequence_terpilih)
+
+    return result_cost_function_minimum, teks_dari_sequence_terpilih, sequences, probabilitas_mention_keseluruhan, probabilitas_mention_user_keseluruhan, skor_link_anomaly_keseluruhan, agregasi_skor_link_anomaly_keseluruhan, seleksi_agregasi_skor_link_anomaly_keseluruhan, result_cost_function, waktu_dari_sequence_terpilih
 
 
 def main():
     locale.setlocale(locale.LC_TIME, 'id_ID')
 
-    # data = ambil_data_bersih()
+    data = ambil_data_bersih()
 
-    # hasil = link_anomaly(data, 7)
+    hasil = link_anomaly(data, 10)
     # print(hasil)
 
 

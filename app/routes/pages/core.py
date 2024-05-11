@@ -55,22 +55,36 @@ def run_link_anomaly():
     db = create_db_connection()
 
     cursor = db.cursor()
-    cursor.execute("SELECT * FROM dataset_preprocessed")
+    cursor.execute("SELECT * FROM dataset_preprocessed ORDER BY time ASC")
     data = cursor.fetchall()
 
     sequence = int(request.args.get('sequence', '2'))
-    
+
     hasil = link_anomaly(data, sequence)
 
     # Assuming hasil is a tuple as you described:
     sequence_number, sequence_value = hasil[0]
     # Taking the first element from the list if it's always one element
     sequence_text = hasil[1]
+    probabilitas_mention_keseluruhan = hasil[3]
+    probabilitas_user_keseluruhan = hasil[4]
+    skor_link_anomaly_keseluruhan = hasil[5]
+    agregasi_skor_link_anomaly_keseluruhan = hasil[6]
+    seleksi_agregasi_skor_link_anomaly_keseluruhan = hasil[7]
+    cost_function = hasil[8]
+    waktu_sequence_terpilih = hasil[9]
 
     response_data = {
         "sequence_number": sequence_number,
         "sequence_value": sequence_value,
-        "sequence_text": sequence_text
+        "sequence_text": sequence_text,
+        "probabilitas_mention_keseluruhan": probabilitas_mention_keseluruhan,
+        "probabilitas_user_keseluruhan": probabilitas_user_keseluruhan,
+        "skor_link_anomaly_keseluruhan": skor_link_anomaly_keseluruhan,
+        "agregasi_skor_link_anomaly_keseluruhan": agregasi_skor_link_anomaly_keseluruhan,
+        "seleksi_agregasi_skor_link_anomaly_keseluruhan": seleksi_agregasi_skor_link_anomaly_keseluruhan,
+        "cost_function": cost_function,
+        "waktu_sequence_terpilih": waktu_sequence_terpilih
     }
 
     return jsonify(response_data)
