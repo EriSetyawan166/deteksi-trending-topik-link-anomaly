@@ -175,10 +175,13 @@ def hitung_cost_function(cleaned_agregasi_skor_link_anomaly, p=0.3, alpha_burst=
     list_hasil = []
     for index, score_time_list in cleaned_agregasi_skor_link_anomaly[0]:
         if score_time_list is None:
-            list_hasil.append((index, None))
             continue
 
         transisi_state = len(score_time_list) - 1
+        if transisi_state < 1:
+            # Jika transisi_state kurang dari 1, lewati proses ini
+            continue
+
         hasil = transisi_state * math.log((1 - p) / p)
 
         for score, selang_waktu in score_time_list:
@@ -294,7 +297,7 @@ def link_anomaly(data, sequence=2):
         agregasi_skor_anomaly_per_diskrit = []
         total_data_per_sequence = len(sequence)
         total_mention = hitung_total_mention(sequence)
-
+        grup_temp = []
         for i, data in enumerate(sequence):
             waktu_sekarang = data[1]
             # menghitung probabilitas mention
@@ -330,17 +333,28 @@ def link_anomaly(data, sequence=2):
                 (data[3], skor_link_anomaly)
             )
 
-            if i % 2 != 0:
-                selisih = hitung_selisih_waktu(waktu_sebelum, waktu_sekarang)
-                hasil_skor_link_anomaly_bersih.append(
-                    [hasil_skor_link_anomaly[-2], hasil_skor_link_anomaly[-1], selisih])
+            if not grup_temp and i != len(sequence) - 1:
+                grup_temp.append(hasil_skor_link_anomaly[i])
                 waktu_sebelum = waktu_sekarang
 
-        # menghitung agregasi skor link anomaly
-        if len(hasil_skor_link_anomaly) % 2 != 0:
+            elif waktu_sekarang == waktu_sebelum:
+                grup_temp.append(hasil_skor_link_anomaly[i])
+
+            else:
+                selisih = hitung_selisih_waktu(waktu_sebelum, waktu_sekarang)
+                grup_temp.append(hasil_skor_link_anomaly[i])
+                grup_temp.append(selisih)
+                hasil_skor_link_anomaly_bersih.append(grup_temp)
+                grup_temp = []
+                waktu_sebelum = waktu_sekarang
+
+        print(hasil_skor_link_anomaly_bersih)
+
+        if len(hasil_skor_link_anomaly_bersih[-1]) == 2:
+            hasil_skor_link_anomaly_bersih.pop()
             if len(hasil_skor_link_anomaly_bersih) > 0:
                 element_terakhir = hasil_skor_link_anomaly[-1]
-                waktu_pertama_dari_grup_terakhir = sequence[-(len(hasil_skor_link_anomaly_bersih[-1])//2 + 1)][1] if len(
+                waktu_pertama_dari_grup_terakhir = sequence[-((len(hasil_skor_link_anomaly_bersih[-1])//2 + 1)) - 1][1] if len(
                     sequence) > 1 else sequence[-1][1]
                 waktu_sebelum = sequence[-1][1]
                 selisih = hitung_selisih_waktu(
@@ -351,6 +365,8 @@ def link_anomaly(data, sequence=2):
             else:
                 hasil_skor_link_anomaly_bersih.append(
                     [hasil_skor_link_anomaly[-1]])
+
+        print(hasil_skor_link_anomaly_bersih)
 
         # merapihan hasil agregasi skor link anomaly
         for diskrit in hasil_skor_link_anomaly_bersih:
@@ -405,8 +421,7 @@ def main():
 
     data = ambil_data_bersih()
 
-    hasil = link_anomaly(data, 10)
-    # print(hasil)
+    hasil = link_anomaly(data, 2)
 
 
 if __name__ == "__main__":

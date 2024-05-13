@@ -398,7 +398,6 @@
     }
 
     function populateUserProbabilityTable(userProbabilities) {
-        console.log("Populating user probabilities table with:", userProbabilities);
         const table = document.getElementById("userProbabilityTable");
         table.innerHTML = "";
         userProbabilities.forEach((item, index) => {
@@ -471,7 +470,7 @@
             let cellSequence = row.insertCell(0);
             let cellCost = row.insertCell(1);
             let decimalValue = new Decimal(item[1]);
-            cellSequence.innerHTML = index + 1;
+            cellSequence.innerHTML = item[0];
             cellCost.innerHTML = parseFloat(decimalValue).toFixed(decimalValue.decimalPlaces());
         });
     }
