@@ -348,8 +348,6 @@ def link_anomaly(data, sequence=2):
                 grup_temp = []
                 waktu_sebelum = waktu_sekarang
 
-        print(hasil_skor_link_anomaly_bersih)
-
         if len(hasil_skor_link_anomaly_bersih[-1]) == 2:
             hasil_skor_link_anomaly_bersih.pop()
             if len(hasil_skor_link_anomaly_bersih) > 0:
@@ -366,7 +364,7 @@ def link_anomaly(data, sequence=2):
                 hasil_skor_link_anomaly_bersih.append(
                     [hasil_skor_link_anomaly[-1]])
 
-        print(hasil_skor_link_anomaly_bersih)
+        # print(hasil_skor_link_anomaly_bersih)
 
         # merapihan hasil agregasi skor link anomaly
         for diskrit in hasil_skor_link_anomaly_bersih:
@@ -411,8 +409,7 @@ def link_anomaly(data, sequence=2):
 
     waktu_dari_sequence_terpilih = ambil_waktu_dari_sequence(
         sequences, result_cost_function_minimum[0])
-    # print(waktu_dari_sequence_terpilih)
-
+    
     return result_cost_function_minimum, teks_dari_sequence_terpilih, sequences, probabilitas_mention_keseluruhan, probabilitas_mention_user_keseluruhan, skor_link_anomaly_keseluruhan, agregasi_skor_link_anomaly_keseluruhan, seleksi_agregasi_skor_link_anomaly_keseluruhan, result_cost_function, waktu_dari_sequence_terpilih
 
 
@@ -420,7 +417,6 @@ def main():
     locale.setlocale(locale.LC_TIME, 'id_ID')
 
     data = ambil_data_bersih()
-
     hasil = link_anomaly(data, 2)
 
 
