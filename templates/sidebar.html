@@ -2,7 +2,8 @@
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
     <!-- Sidebar - Brand -->
-    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{{ url_for('pages.core.home_route') }}">
+    <a class="sidebar-brand d-flex align-items-center justify-content-center"
+        href="{{ url_for('pages.core.home_route') }}">
         <div class="sidebar-brand-text">Deteksi Trending Topik Link Anomaly</div>
     </a>
 
@@ -20,10 +21,10 @@
     <hr class="sidebar-divider my-0">
 
     <!-- Nav Item - Scraping / Import Data -->
-    <li class="nav-item {% if request.path == '/scraping' %}active{% endif %}">
+    <li class="nav-item {% if request.path == '/import' %}active{% endif %}">
         <a class="nav-link" href="{{ url_for('pages.core.scraping_route') }}">
             <i class="fas fa-fw fa-magnifying-glass"></i>
-            <span>Scraping / Import Data</span></a>
+            <span>Import Data</span></a>
     </li>
 
     <!-- Divider -->
@@ -35,7 +36,7 @@
             <i class="fas fa-fw fa-scissors"></i>
             <span>preprocessing</span></a>
     </li>
-    
+
     <!-- Divider -->
     <hr class="sidebar-divider my-0">
 
@@ -45,7 +46,7 @@
             <i class="fas fa-fw fa-circle-nodes"></i>
             <span>Link Anomaly</span></a>
     </li>
-     
+
     <!-- Divider -->
     <hr class="sidebar-divider my-0">
 
@@ -55,7 +56,7 @@
             <i class="fas fa-fwd fa-puzzle-piece"></i>
             <span>Modelling Topik</span></a>
     </li>
-    
+
     <!-- Divider -->
     <hr class="sidebar-divider my-0">
 
@@ -66,7 +67,7 @@
             <span>Pengujian</span></a>
     </li>
 
-    
+
 
     <!-- Sidebar Toggler (Sidebar) -->
     <div class="text-center d-none d-md-inline">
