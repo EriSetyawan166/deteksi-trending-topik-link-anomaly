@@ -65,7 +65,7 @@
             </div>
 
             <div>
-                <table class="table" id="dataTable">
+                <table class="table table-hover" id="dataTable">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -124,57 +124,84 @@
         $('#importDataModal').modal('show');
     }
 
-    $('#confirmDeleteAllButton').click(function () {
-        // Tambahkan logika untuk menghapus semua data di sini
-        // Misalnya, dengan menggunakan AJAX ke endpoint delete_all
-        $.ajax({
-            url: "{{ url_for('pages.core.api_delete_all_data') }}",
-            type: "DELETE",
-            success: function (response) {
-                // Handle success response
-                $('#deleteAllModal').modal('hide');
-                Swal.fire(
-                    'Terhapus!',
-                    'Data Anda telah dihapus.',
-                    'success'
-                );
-                // Refresh atau reload tabel setelah penghapusan
-                $('#dataTable').DataTable().ajax.reload();
+    function openImportModal() {
+        Swal.fire({
+            title: 'Impor Data',
+            text: 'Pilih file CSV yang ingin diimpor.',
+            input: 'file',
+            inputAttributes: {
+                'accept': '.csv',
+                'aria-label': 'Upload CSV file'
             },
-            error: function (xhr, status, error) {
-                console.error("Error deleting data: " + error);
-                Swal.fire(
-                    'Gagal!',
-                    'Gagal menghapus data: ' + error,
-                    'error'
-                );
+            showCancelButton: true,
+            confirmButtonText: 'Impor',
+            cancelButtonText: 'Batal',
+            showLoaderOnConfirm: true,
+            preConfirm: (file) => {
+                if (file) {
+                    const formData = new FormData();
+                    formData.append('fileInput', file);
+                    return fetch("{{ url_for('pages.core.api_upload_csv_file') }}", {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(response.statusText)
+                            }
+                            return response.json();
+                        })
+                        .catch(error => {
+                            Swal.showValidationMessage(`Gagal mengimpor: ${error}`);
+                        });
+                } else {
+                    Swal.showValidationMessage('Harus memilih file CSV untuk diimpor.');
+                }
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Berhasil Diimpor!',
+                    icon: 'success',
+                    text: 'File CSV telah berhasil diimpor ke database.'
+                });
+                $('#dataTable').DataTable().ajax.reload();
             }
         });
-    });
+    }
 
-    function uploadCSV() {
-        var formData = new FormData($('#uploadForm')[0]);
-
-        $.ajax({
-            url: "{{ url_for('pages.core.api_upload_csv_file') }}",
-            type: "POST",
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (response) {
-                // Handle success response (if any)
-                $('#importDataModal').modal('hide');
-                Swal.fire(
-                    'Berhasil!',
-                    'File telah berhasil diupload.',
-                    'success'
-                );
-
-                // Refresh or reload table after importing data
-                $('#dataTable').DataTable().ajax.reload();
-            },
-            error: function (xhr, status, error) {
-                console.error("Error uploading CSV file: " + error);
+    function openDeleteAllModal() {
+        Swal.fire({
+            title: 'Konfirmasi Penghapusan',
+            text: 'Apakah Anda yakin ingin menghapus semua data?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Hapus',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: "{{ url_for('pages.core.api_delete_all_data') }}",
+                    type: "DELETE",
+                    success: function (response) {
+                        Swal.fire(
+                            'Terhapus!',
+                            'Semua data telah dihapus.',
+                            'success'
+                        );
+                        $('#dataTable').DataTable().ajax.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        Swal.fire(
+                            'Gagal!',
+                            'Gagal menghapus data: ' + error,
+                            'error'
+                        );
+                    }
+                });
             }
         });
     }

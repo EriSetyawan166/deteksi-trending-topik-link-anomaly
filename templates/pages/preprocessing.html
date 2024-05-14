@@ -1,5 +1,245 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>ini preprocessing</h1>
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Prepcrocessing Data</h1>
+    </div>
+    <div class="card shadow mb-4" id="hasilCard">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Data Hasil Prepcrocessing</h6>
+        </div>
+
+        <div class="card-body">
+            <button class="btn btn-primary mb-3" id="startPreprocessing">Mulai Preprocessing</button>
+            <button class="btn btn-danger mb-3" id="startDeletion">Hapus Data</button>
+
+            <div class="modal fade" id="preprocessingModal" tabindex="-1" role="dialog"
+                aria-labelledby="preprocessingModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="preprocessingModalLabel">Proses Preprocessing</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteModalLabel">Konfirmasi Penghapusan</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            Apakah Anda yakin ingin menghapus semua data preprocessing?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                            <button type="button" class="btn btn-danger" id="confirmDelete">Hapus</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="dataStats" class="mb-3">
+                <p>Total Data: <span id="totalData">0</span></p>
+                <p>Data Setelah Preprocessing: <span id="processedData">0</span></p>
+            </div>
+            <div>
+                <table class="table table-hover" id="dataTable" style="table-layout: fixed;">
+                    <thead>
+                        <tr>
+                            <th style="width: 7%;">id</th>
+                            <th style="width: 15%;">time</th>
+                            <th style="width: 15%;">username</th>
+                            <th>tweet</th>
+                            <th style="width: 10%;">jumlah mention</th>
+                            <th style="width: 20%;">id user mentioned</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        var table = $('#dataTable').DataTable({
+            "ajax": {
+                "url": "{{ url_for('pages.core.api_data_preprocessing') }}",
+                "type": "GET",
+                "dataSrc": function (json) {
+                    // Update jumlah total data yang diproses
+                    $('#totalProcessedData').text(json.total_count);
+                    return json.data;
+                }
+            },
+            "columns": [
+                { "data": null, searchable: false, orderable: false },  // Kolom untuk penomoran otomatis
+                {
+                    "data": "time",
+                    "render": function (data, type, row) {
+                        return moment(data).format('DD-MM-YYYY HH:mm:ss');  // Format waktu
+                    }
+                },
+                { "data": "user_twitter" },
+                { "data": "tweet" },
+                { "data": "jumlah_mention" },
+                { "data": "id_user_mentioned" },
+            ],
+            "columnDefs": [{
+                "targets": 0,  // Target kolom pertama untuk penomoran
+                "render": function (data, type, full, meta) {
+                    return meta.row + 1 + meta.settings._iDisplayStart;  // Menambahkan penomoran yang dimulai dari 1
+                }
+            }]
+        });
+
+        updateStats();
+
+        $('#startPreprocessing').click(function () {
+            $.ajax({
+                url: "{{ url_for('pages.core.check_preprocessing_data') }}",
+                type: "GET",
+                success: function (response) {
+                    if (response.exists) {
+                        Swal.fire({
+                            title: 'Peringatan!',
+                            text: 'Data sudah ada di tabel preprocessing. Harap bersihkan data sebelum menjalankan preprocessing lagi.',
+                            icon: 'warning',
+                            confirmButtonText: 'Oke'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: "Mulai Preprocessing",
+                            text: "Tekan 'Mulai' untuk memulai preprocessing",
+                            icon: 'info',
+                            showCancelButton: true,
+                            confirmButtonText: "Mulai",
+                            showLoaderOnConfirm: true,
+                            preConfirm: () => {
+                                return new Promise((resolve, reject) => {
+                                    $.ajax({
+                                        url: "{{ url_for('pages.core.run_preprocessing') }}",
+                                        type: "POST",
+                                        success: function (response) {
+                                            resolve(response);
+                                        },
+                                        error: function (xhr, status, error) {
+                                            reject(new Error('Gagal melakukan preprocessing: ' + error));
+                                        }
+                                    });
+                                })
+                                    .catch(error => {
+                                        Swal.showValidationMessage(`Permintaan gagal: ${error}`);
+                                    });
+                            },
+                            allowOutsideClick: () => !Swal.isLoading()
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                Swal.fire({
+                                    title: 'Selesai!',
+                                    text: 'Preprocessing telah berhasil dilakukan.',
+                                    confirmButtonText: 'Lihat Hasil',
+                                    icon: 'success'
+                                });
+                                $('#dataTable').DataTable().ajax.reload();
+                                updateStats();
+                            }
+                        });
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error saat memeriksa keberadaan data: " + error);
+                }
+            });
+        });
+
+        $('#startDeletion').click(function () {
+            Swal.fire({
+                title: 'Konfirmasi Penghapusan',
+                text: 'Apakah Anda yakin ingin menghapus semua data preprocessing?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Hapus',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ url_for('pages.core.delete_preprocessing_data') }}",
+                        type: "POST",
+                        success: function () {
+                            Swal.fire('Terhapus!', 'Data preprocessing telah berhasil dihapus.', 'success');
+                            $('#dataTable').DataTable().ajax.reload();
+                            updateStats(); // Update stats after deletion
+                        },
+                        error: function (response) {
+                            Swal.fire('Gagal!', response.responseJSON.error, 'error');
+                        }
+                    });
+                }
+            });
+        });
+
+        $('#startDeletion').click(function () {
+            Swal.fire({
+                title: 'Konfirmasi Penghapusan',
+                text: 'Apakah Anda yakin ingin menghapus semua data preprocessing?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Hapus',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ url_for('pages.core.delete_preprocessing_data') }}",
+                        type: "POST",
+                        success: function () {
+                            Swal.fire('Deleted!', 'Data preprocessing telah dihapus.', 'success');
+                            $('#dataTable').DataTable().ajax.reload();
+                            updateStats();
+                        },
+                        error: function (response) {
+                            Swal.fire('Failed!', response.responseJSON.error, 'error');
+                        }
+                    });
+                }
+            });
+        });
+
+    });
+
+    function updateStats() {
+        $.ajax({
+            url: "{{ url_for('pages.core.api_data_stats') }}",
+            type: "GET",
+            success: function (response) {
+                $('#totalData').text(response.total_data);
+                $('#processedData').text(response.processed_data);
+            },
+            error: function (xhr, status, error) {
+                console.log("Error fetching data stats: " + error);
+            }
+        });
+    }
+
+</script>
+
 {% endblock %}

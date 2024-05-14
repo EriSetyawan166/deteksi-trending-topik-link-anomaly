@@ -3,7 +3,7 @@ import pandas as pd
 import re
 from dotenv import load_dotenv
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
-from db_operation import ambil_data_kotor, ambil_kamus_slangword, masukan_data_hasil_preprocessed
+from .db_operation import ambil_data_kotor, ambil_kamus_slangword, masukan_data_hasil_preprocessed
 import datetime
 
 load_dotenv()
@@ -11,6 +11,7 @@ DB_HOST = os.getenv("DB_HOST")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_DATABASE = os.getenv("DB_DATABASE")
+
 
 def adjust_timestamp(time_str):
     """
@@ -32,6 +33,7 @@ def adjust_timestamp(time_str):
     # Format datetime sebagai string
     new_format = '%Y-%m-%d %H:%M:%S'
     return adjusted_dt.strftime(new_format)
+
 
 def selection_attribute(df):
     """
@@ -59,6 +61,7 @@ def selection_attribute(df):
 
     return df_selected
 
+
 def replace_slangwords(tweet, slangwords):
     """
     Mengubah kata tidak baku menjadi kata baku dari teks tweet.
@@ -70,13 +73,14 @@ def replace_slangwords(tweet, slangwords):
         str: Teks tweet tanpa URL.
     """
     words = tweet.split()
-    for i in range(len(words)): 
+    for i in range(len(words)):
         for slangword in slangwords:
             if slangword[2] == words[i]:
                 words[i] = slangword[1]
 
     result = ' '.join(words)
     return result
+
 
 def remove_stopwords(tweet):
     """
@@ -92,6 +96,7 @@ def remove_stopwords(tweet):
     stopword_remover = factory.create_stop_word_remover()
     tweet_clean = stopword_remover.remove(tweet)
     return tweet_clean
+
 
 def remove_urls(tweet):
     """
@@ -111,6 +116,7 @@ def remove_urls(tweet):
 
     return tweet_clean
 
+
 def remove_mentions(tweet):
     """
     Menghilangkan mention dari teks tweet.
@@ -128,6 +134,7 @@ def remove_mentions(tweet):
     tweet_clean = re.sub(mention_pattern, '', tweet)
 
     return tweet_clean
+
 
 def remove_hashtags(tweet):
     """
@@ -147,6 +154,7 @@ def remove_hashtags(tweet):
 
     return tweet_clean
 
+
 def remove_non_alphabet(tweet):
     """
     Menghilangkan karakter selain a-z dari teks tweet.
@@ -165,6 +173,7 @@ def remove_non_alphabet(tweet):
 
     return tweet_clean
 
+
 def remove_extra_spaces(tweet):
     """
     Menghilangkan spasi yang berjarak lebih dari satu spasi dari teks tweet.
@@ -179,6 +188,7 @@ def remove_extra_spaces(tweet):
     tweet_clean = ' '.join(tweet.split())
 
     return tweet_clean
+
 
 def preprocess(datas):
     slangword = ambil_kamus_slangword()
@@ -195,14 +205,14 @@ def preprocess(datas):
             id_user_mentioned = re.findall(r'(@\w+)', data[3])
 
             time = adjust_timestamp(data[1])
-            
+
             # Mengubah teks menjadi lowercase
             text = data[3].lower()
 
             # mengubah slangword
             text = replace_slangwords(text, slangword)
 
-            #Menghapus stopword
+            # Menghapus stopword
             text = remove_stopwords(text)
 
             # Menghapus url
@@ -216,26 +226,27 @@ def preprocess(datas):
 
             # Menghapus huruf selain a-z
             text = remove_non_alphabet(text)
-            
+
             # Menghapus spasi berjarak
             text = remove_extra_spaces(text)
 
-            processed_data.append((data[0], time, data[2], text, jumlah_mention, ','.join(id_user_mentioned)))
+            processed_data.append(
+                (data[0], time, data[2], text, jumlah_mention, ','.join(id_user_mentioned)))
         else:
             continue
     return processed_data
-    
+
 
 def main():
     # directory = 'tweets-data/'
     # preprocess_csv(directory)
     data = ambil_data_kotor()
-    
+
     # print(data)
     preprocessing = preprocess(data)
-    
+    print(preprocessing)
+
     masukan_data_hasil_preprocessed(preprocessing)
-    
 
 
 if __name__ == "__main__":

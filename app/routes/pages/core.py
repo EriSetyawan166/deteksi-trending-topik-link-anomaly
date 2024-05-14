@@ -2,6 +2,7 @@
 from flask import Blueprint, render_template, current_app, Response, request
 import csv
 from ...util import link_anomaly
+from ...util import preprocessing
 # from models import DatasetPreprocessed
 import mysql.connector
 import locale
@@ -44,17 +45,13 @@ def api_data():
     data = cursor.fetchall()
 
     for row in data:
-        # Each row is a tuple, so unpack the values
         username, created_at, full_text = row
-        # Create a dictionary for the current row and append it to the response data list
         row_data = {
             "username": username,
             "created_at": created_at,
             "full_text": full_text,
         }
         response_data.append(row_data)
-
-    # Wrap the list of data in a dictionary under the key 'data'
     return jsonify({"data": response_data})
 
 
@@ -106,16 +103,14 @@ def api_upload_csv_file():
                     user_id_str = row['user_id_str']
                     username = row['username']
 
-                    # Query SQL untuk memasukkan data ke tabel
                     sql = """INSERT INTO dataset_twitter (conversation_id_str, created_at, favorite_count, full_text, id_str, 
                             image_url, in_reply_to_screen_name, lang, location, quote_count, reply_count, retweet_count, 
                             tweet_url, user_id_str, username) 
                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-                    values = (conversation_id_str, created_at, favorite_count, full_text, id_str, image_url, 
-                            in_reply_to_screen_name, lang, location, quote_count, reply_count, retweet_count, 
-                            tweet_url, user_id_str, username)
-                    
-                    # Eksekusi query SQL
+                    values = (conversation_id_str, created_at, favorite_count, full_text, id_str, image_url,
+                              in_reply_to_screen_name, lang, location, quote_count, reply_count, retweet_count,
+                              tweet_url, user_id_str, username)
+
                     cursor.execute(sql, values)
                     db.commit()
 
@@ -126,20 +121,115 @@ def api_upload_csv_file():
         return jsonify({"error": "Invalid file format, please upload a CSV file"}), 400
 
 
-# Route for preprocessing page
-
 
 @core_bp.route("/preprocessing")
 def preprocessing_route():
-    # Render the preprocessing template
     return render_template("pages/preprocessing.html")
 
-# Route for link anomaly page
+
+@core_bp.route("/api/data/preprocessing")
+def api_data_preprocessing():
+    db = create_db_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM dataset_preprocessed")
+    data = cursor.fetchall()
+
+    response_data = []
+    for row in data:
+        row_data = {
+            "id": row[0],
+            "time": row[1],
+            "user_twitter": row[2],
+            "tweet": row[3],
+            "jumlah_mention": row[4],
+            "id_user_mentioned": row[5],
+        }
+        response_data.append(row_data)
+
+    total_count = len(response_data)
+
+    return jsonify({"data": response_data, "total_count": total_count})
+
+
+@core_bp.route("/api/data/stats")
+def api_data_stats():
+    db = create_db_connection()
+    cursor = db.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM dataset_twitter")
+    total_data = cursor.fetchone()[0]
+
+    cursor.execute(
+        "SELECT COUNT(*) FROM dataset_preprocessed WHERE tweet != 'n/a'")
+    processed_data = cursor.fetchone()[0]
+
+    return jsonify({"total_data": total_data, "processed_data": processed_data})
+
+
+@core_bp.route("/delete_preprocessing_data", methods=['POST'])
+def delete_preprocessing_data():
+    db = create_db_connection()
+    cursor = db.cursor()
+    try:
+        cursor.execute("DELETE FROM dataset_preprocessed")
+        db.commit()
+        return jsonify({"success": "Data berhasil dihapus"}), 200
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": "Gagal menghapus data: {}".format(str(e))}), 500
+    finally:
+        cursor.close()
+        db.close()
+
+
+@core_bp.route("/check_preprocessing_data", methods=['GET'])
+def check_preprocessing_data():
+    db = create_db_connection()
+    cursor = db.cursor()
+    try:
+        cursor.execute(
+            "SELECT EXISTS(SELECT 1 FROM dataset_preprocessed LIMIT 1)")
+        exists = cursor.fetchone()[0]
+        return jsonify({"exists": bool(exists)})
+    finally:
+        cursor.close()
+        db.close()
+
+
+@core_bp.route("/run_preprocessing", methods=['POST'])
+def run_preprocessing():
+    db = create_db_connection()
+    cursor = db.cursor()
+    try:
+        cursor.execute(
+            "SELECT id, created_at, username, full_text FROM dataset_twitter")
+        data = cursor.fetchall()
+
+        processed_data = preprocessing.preprocess(data)
+
+        for row in processed_data:
+            insert_sql = """
+            INSERT INTO dataset_preprocessed (id, time, user_twitter, tweet, jumlah_mention, id_user_mentioned)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(
+                insert_sql, (row[0], row[1], row[2], row[3], row[4], row[5]))
+
+        db.commit()
+        return jsonify({"success": "Data processed and stored successfully", "data": processed_data})
+
+    except mysql.connector.Error as err:
+        db.rollback()
+        return jsonify({"error": "Failed to process data: {}".format(str(err))}), 500
+
+    finally:
+        cursor.close()
+        db.close()
+
 
 
 @core_bp.route("/link_anomaly")
 def link_anomaly_route():
-    # Render the template
     return render_template("pages/link_anomaly.html")
 
 
@@ -156,9 +246,7 @@ def run_link_anomaly():
 
     hasil = link_anomaly(data, sequence)
 
-    # Assuming hasil is a tuple as you described:
     sequence_number, sequence_value = hasil[0]
-    # Taking the first element from the list if it's always one element
     sequence_text = hasil[1]
     probabilitas_mention_keseluruhan = hasil[3]
     probabilitas_user_keseluruhan = hasil[4]
@@ -183,18 +271,14 @@ def run_link_anomaly():
 
     return jsonify(response_data)
 
-# Route for modelling page
 
 
 @core_bp.route("/modelling")
 def modelling_route():
-    # Render the modelling template
     return render_template("pages/modelling.html")
 
-# Route for pengujian page
 
 
 @core_bp.route("/pengujian")
 def pengujian_route():
-    # Render the pengujian template
     return render_template("pages/pengujian.html")
