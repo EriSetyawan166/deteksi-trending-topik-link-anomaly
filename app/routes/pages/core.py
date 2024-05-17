@@ -1,14 +1,21 @@
 # Flask modules
 from flask import Blueprint, render_template, current_app, Response, request
 import csv
+import json
 from ...util import link_anomaly
 from ...util import preprocessing
+from ...util import lda
 # from models import DatasetPreprocessed
 import mysql.connector
 import locale
 from flask import jsonify
 
 core_bp = Blueprint("core", __name__, url_prefix="/")
+
+
+def save_to_json(data, filename):
+    with open(filename, 'w') as f:
+        json.dump(data, f, indent=4, default=str)
 
 
 def create_db_connection():
@@ -121,7 +128,6 @@ def api_upload_csv_file():
         return jsonify({"error": "Invalid file format, please upload a CSV file"}), 400
 
 
-
 @core_bp.route("/preprocessing")
 def preprocessing_route():
     return render_template("pages/preprocessing.html")
@@ -227,7 +233,6 @@ def run_preprocessing():
         db.close()
 
 
-
 @core_bp.route("/link_anomaly")
 def link_anomaly_route():
     return render_template("pages/link_anomaly.html")
@@ -255,7 +260,6 @@ def run_link_anomaly():
     seleksi_agregasi_skor_link_anomaly_keseluruhan = hasil[7]
     cost_function = hasil[8]
     waktu_sequence_terpilih = hasil[9]
-
     response_data = {
         "sequence_number": sequence_number,
         "sequence_value": sequence_value,
@@ -269,14 +273,63 @@ def run_link_anomaly():
         "waktu_sequence_terpilih": waktu_sequence_terpilih
     }
 
-    return jsonify(response_data)
+    save_to_json({
+        "waktu_sequence_terpilih": waktu_sequence_terpilih,
+        "sequence_text": sequence_text
+    }, 'link_anomaly_result.json')
 
+    return jsonify(response_data)
 
 
 @core_bp.route("/modelling")
 def modelling_route():
     return render_template("pages/modelling.html")
 
+
+@core_bp.route("/api/data/hasil_link_anomaly")
+def hasil_link_anomaly():
+    try:
+        with open('link_anomaly_result.json', 'r') as file:
+            data = json.load(file)
+
+        return jsonify(data)
+
+    except FileNotFoundError:
+        return jsonify({"error": "File not found"}), 404
+
+    except json.JSONDecodeError:
+        return jsonify({"error": "Error decoding JSON"}), 500
+
+
+@core_bp.route('/run_lda', methods=['GET'])
+def run_lda():
+    try:
+        # Membaca data dari file JSON
+        with open('link_anomaly_result.json', 'r') as file:
+            data = json.load(file)
+            sequence_texts = data.get('sequence_text', [])
+        # print(sequence_texts)
+        # Tokenisasi data
+        tokenized_data = lda.tokenize_data(sequence_texts)
+
+        # Menjalankan LDA
+        K = 1  # Jumlah topik
+        max_iteration = 1000  # Iterasi maksimum
+        topic_word_counts, document_topic_counts = lda.run_lda(
+            tokenized_data, K, max_iteration)
+        # Mendapatkan daftar kata untuk setiap topik
+        topic_word_list = lda.get_topic_word_list(topic_word_counts, K)
+
+        return jsonify({"topic_word_list": topic_word_list})
+
+    except FileNotFoundError:
+        return jsonify({"error": "File not found"}), 404
+
+    except json.JSONDecodeError:
+        return jsonify({"error": "Error decoding JSON"}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @core_bp.route("/pengujian")

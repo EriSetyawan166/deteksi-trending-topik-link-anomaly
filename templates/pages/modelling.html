@@ -1,5 +1,123 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>ini modelling</h1>
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Modelling topik dengan LDA</h1>
+    </div>
+    <div class="d-sm-flex align-items-center justify-content-start mb-4">
+        <button id="startButton" class="btn btn-primary">Mulai</button>
+    </div>
+    <div class="card shadow mb-4" id="hasilModelling" style="display: none;">
+        <div class="card-body">
+
+        </div>
+    </div>
+    <div class="card shadow mb-4" id="linkAnomalyCard" style="display: none;">
+        <div class="card-body">
+            <div id="sequenceDetails" class="mb-4">
+                <h4>Tweet yang akan dimodel <span id="sequenceTime"></span></h4>
+            </div>
+            <table id="dataTable" class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Text</th>
+                    </tr>
+                </thead>
+                <tbody style="max-height: 400px; overflow-y: auto;">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    $(document).ready(function () {
+        $('#startButton').click(function () {
+            Swal.fire({
+                title: "Mulai LDA",
+                text: "Tekan 'Mulai' untuk memulai proses LDA",
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: "Mulai",
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    return new Promise((resolve, reject) => {
+                        $.ajax({
+                            url: "{{ url_for('pages.core.run_lda') }}",
+                            type: "GET",
+                            success: function (response) {
+                                if (response.error) {
+                                    reject(new Error('Gagal menjalankan LDA: ' + response.error));
+                                } else {
+                                    resolve(response);
+                                }
+                            },
+                            error: function (xhr, status, error) {
+                                reject(new Error('AJAX error: ' + error));
+                            }
+                        });
+                    })
+                        .catch(error => {
+                            Swal.showValidationMessage(`Request failed: ${error}`);
+                        });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    Swal.fire({
+                        title: 'Selesai!',
+                        text: 'LDA berhasil diproses.',
+                        icon: 'success'
+                    });
+                    $('#hasilModelling').show();
+                    displayLdaResults(result.value.topic_word_list);
+                }
+            });
+        });
+
+        function displayLdaResults(topicWordList) {
+            var $cardBody = $('#hasilModelling .card-body');
+            $cardBody.empty(); // Bersihkan isi sebelumnya
+
+            Object.keys(topicWordList).forEach(function (topic) {
+                var words = topicWordList[topic].join(", ");
+                var $topic = $('<div>').append($('<h5>').text(topic), $('<p>').text(words));
+                $cardBody.append($topic);
+            });
+        }
+
+        // Initialize DataTable for displaying link anomaly data
+        var table = $('#dataTable').DataTable({
+            "ajax": {
+                "url": "{{ url_for('pages.core.hasil_link_anomaly') }}",
+                "type": "GET",
+                "dataSrc": function (json) {
+                    if (json.error) {
+                        $('#linkAnomalyCard').hide();
+                        return [];
+                    }
+                    $('#linkAnomalyCard').show();
+                    if (json.waktu_sequence_terpilih) {
+                        $('#sequenceTime').text(json.waktu_sequence_terpilih.join(", "));
+                    }
+                    return json.sequence_text.map((text, index) => {
+                        return { '#': index + 1, 'Text': text };
+                    });
+                },
+                "error": function (xhr, status, error) {
+                    $('#linkAnomalyCard').hide();
+                    console.error("AJAX Error:", status, error);
+                }
+            },
+            "columns": [
+                { "data": "#" },
+                { "data": "Text" }
+            ]
+        });
+    });
+</script>
 {% endblock %}

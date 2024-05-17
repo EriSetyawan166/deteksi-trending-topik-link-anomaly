@@ -409,7 +409,7 @@ def link_anomaly(data, sequence=2):
 
     waktu_dari_sequence_terpilih = ambil_waktu_dari_sequence(
         sequences, result_cost_function_minimum[0])
-    
+
     return result_cost_function_minimum, teks_dari_sequence_terpilih, sequences, probabilitas_mention_keseluruhan, probabilitas_mention_user_keseluruhan, skor_link_anomaly_keseluruhan, agregasi_skor_link_anomaly_keseluruhan, seleksi_agregasi_skor_link_anomaly_keseluruhan, result_cost_function, waktu_dari_sequence_terpilih
 
 

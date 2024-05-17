@@ -4,6 +4,7 @@ import re
 from dotenv import load_dotenv
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 from .db_operation import ambil_data_kotor, ambil_kamus_slangword, masukan_data_hasil_preprocessed
+from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 import datetime
 
 load_dotenv()
@@ -72,14 +73,27 @@ def replace_slangwords(tweet, slangwords):
     Returns:
         str: Teks tweet tanpa URL.
     """
-    words = tweet.split()
-    for i in range(len(words)):
-        for slangword in slangwords:
-            if slangword[2] == words[i]:
-                words[i] = slangword[1]
+    # words = tweet.split()
+    # for i in range(len(words)):
+    #     for slangword in slangwords:
+    #         if slangword[2] == words[i]:
+    #             words[i] = slangword[1]
 
-    result = ' '.join(words)
-    return result
+    # result = ' '.join(words)
+    # return result
+    # Membuat dictionary dari daftar slangwords, mengabaikan id
+    # Tuple: (id, baku, slang) diubah menjadi (slang: baku)
+    slang_dict = {slang: baku for _, baku, slang in slangwords}
+
+    # Memecah tweet menjadi kata-kata
+    words = tweet.split()
+
+    # Mengganti slang words dengan menggunakan dictionary
+    # Hanya mengganti jika kata ada dalam dictionary
+    words = [slang_dict.get(word, word) for word in words]
+
+    # Menggabungkan kembali kata-kata menjadi satu string
+    return ' '.join(words)
 
 
 def remove_stopwords(tweet):
@@ -174,6 +188,25 @@ def remove_non_alphabet(tweet):
     return tweet_clean
 
 
+def stem_text(text, exclude_list):
+    factory = StemmerFactory()
+    stemmer = factory.create_stemmer()
+
+    # Memisahkan kata berdasarkan spasi
+    words = text.split()
+    stemmed_words = []
+
+    for word in words:
+        # Cek apakah kata ada dalam daftar pengecualian
+        if word.lower() in exclude_list:
+            stemmed_words.append(word)
+        else:
+            stemmed_words.append(stemmer.stem(word))
+
+    # Gabungkan kembali kata-kata yang telah diproses
+    return ' '.join(stemmed_words)
+
+
 def remove_extra_spaces(tweet):
     """
     Menghilangkan spasi yang berjarak lebih dari satu spasi dari teks tweet.
@@ -192,7 +225,11 @@ def remove_extra_spaces(tweet):
 
 def preprocess(datas):
     slangword = ambil_kamus_slangword()
+    exclude_list = ['pemilu']
+    print(slangword)
     # print(slangword)
+    factory = StemmerFactory()
+    stemmer = factory.create_stemmer()
 
     processed_data = []
     for data in datas:
@@ -209,12 +246,6 @@ def preprocess(datas):
             # Mengubah teks menjadi lowercase
             text = data[3].lower()
 
-            # mengubah slangword
-            text = replace_slangwords(text, slangword)
-
-            # Menghapus stopword
-            text = remove_stopwords(text)
-
             # Menghapus url
             text = remove_urls(text)
 
@@ -230,6 +261,15 @@ def preprocess(datas):
             # Menghapus spasi berjarak
             text = remove_extra_spaces(text)
 
+            # mengubah slangword
+            text = replace_slangwords(text, slangword)
+
+            # Menghapus stopword
+            text = remove_stopwords(text)
+
+            # Menambahkan stemming
+            text = stem_text(text, exclude_list)
+
             processed_data.append(
                 (data[0], time, data[2], text, jumlah_mention, ','.join(id_user_mentioned)))
         else:
@@ -238,11 +278,9 @@ def preprocess(datas):
 
 
 def main():
-    # directory = 'tweets-data/'
+    directory = 'tweets-data/'
     # preprocess_csv(directory)
     data = ambil_data_kotor()
-
-    # print(data)
     preprocessing = preprocess(data)
     print(preprocessing)
 
