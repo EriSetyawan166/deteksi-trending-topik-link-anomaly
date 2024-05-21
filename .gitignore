@@ -10,3 +10,5 @@ tweets-data-preprocessed/*
 
 !tweets-data-preprocessed/.gitkeep 
 !tweets-data/.gitkeep 
+
+link_anomaly_result.json

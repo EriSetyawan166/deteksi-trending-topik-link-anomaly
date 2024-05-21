@@ -25,7 +25,8 @@ def adjust_timestamp(time_str):
         str: Waktu dengan format baru sebagai string.
     """
     # Parse the string to datetime object
-    original_format = '%a %b %d %H:%M:%S %z %Y'
+    # original_format = '%a %b %d %H:%M:%S %z %Y'
+    original_format = '%Y-%m-%d %H:%M:%S%z'
     dt = datetime.datetime.strptime(time_str, original_format)
 
     # Tambahkan 7 jam
@@ -226,7 +227,6 @@ def remove_extra_spaces(tweet):
 def preprocess(datas):
     slangword = ambil_kamus_slangword()
     exclude_list = ['pemilu']
-    print(slangword)
     # print(slangword)
     factory = StemmerFactory()
     stemmer = factory.create_stemmer()

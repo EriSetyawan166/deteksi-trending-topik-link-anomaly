@@ -94,29 +94,50 @@ def api_upload_csv_file():
                 csvreader = csv.DictReader(csvfile)
                 for row in csvreader:
                     # Lakukan sesuatu dengan setiap baris (contoh: simpan ke database)
-                    conversation_id_str = row['conversation_id_str']
-                    created_at = row['created_at']
-                    favorite_count = row['favorite_count']
-                    full_text = row['full_text']
-                    id_str = row['id_str']
-                    image_url = row['image_url']
-                    in_reply_to_screen_name = row['in_reply_to_screen_name']
-                    lang = row['lang']
-                    location = row['location']
-                    quote_count = row['quote_count']
-                    reply_count = row['reply_count']
-                    retweet_count = row['retweet_count']
-                    tweet_url = row['tweet_url']
-                    user_id_str = row['user_id_str']
+                    # conversation_id_str = row['conversation_id_str']
+                    # created_at = row['created_at']
+                    # favorite_count = row['favorite_count']
+                    # full_text = row['full_text']
+                    # id_str = row['id_str']
+                    # image_url = row['image_url']
+                    # in_reply_to_screen_name = row['in_reply_to_screen_name']
+                    # lang = row['lang']
+                    # location = row['location']
+                    # quote_count = row['quote_count']
+                    # reply_count = row['reply_count']
+                    # retweet_count = row['retweet_count']
+                    # tweet_url = row['tweet_url']
+                    # user_id_str = row['user_id_str']
+                    # username = row['username']
+
+                    # sql = """INSERT INTO dataset_twitter (conversation_id_str, created_at, favorite_count, full_text, id_str,
+                    #         image_url, in_reply_to_screen_name, lang, location, quote_count, reply_count, retweet_count,
+                    #         tweet_url, user_id_str, username)
+                    #         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                    # values = (conversation_id_str, created_at, favorite_count, full_text, id_str, image_url,
+                    #           in_reply_to_screen_name, lang, location, quote_count, reply_count, retweet_count,
+                    #           tweet_url, user_id_str, username)
+
+                    conversation_id_str = row['id']
+                    created_at = row['date']
+                    # favorite_count = row['favorite_count']
+                    full_text = row['rawContent']
+                    # id_str = row['id_str']
+                    # image_url = row['image_url']
+                    # in_reply_to_screen_name = row['in_reply_to_screen_name']
+                    # lang = row['lang']
+                    # location = row['location']
+                    # quote_count = row['quote_count']
+                    # reply_count = row['reply_count']
+                    # retweet_count = row['retweet_count']
+                    # tweet_url = row['tweet_url']
+                    # user_id_str = row['user_id_str']
                     username = row['username']
 
-                    sql = """INSERT INTO dataset_twitter (conversation_id_str, created_at, favorite_count, full_text, id_str, 
-                            image_url, in_reply_to_screen_name, lang, location, quote_count, reply_count, retweet_count, 
-                            tweet_url, user_id_str, username) 
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-                    values = (conversation_id_str, created_at, favorite_count, full_text, id_str, image_url,
-                              in_reply_to_screen_name, lang, location, quote_count, reply_count, retweet_count,
-                              tweet_url, user_id_str, username)
+                    sql = """INSERT INTO dataset_twitter (conversation_id_str, created_at, full_text, username) 
+                            VALUES (%s, %s, %s, %s)"""
+                    values = (conversation_id_str,
+                              created_at, full_text, username)
 
                     cursor.execute(sql, values)
                     db.commit()
