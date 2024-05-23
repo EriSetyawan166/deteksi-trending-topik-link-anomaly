@@ -275,39 +275,67 @@
     const numPagesToShow = 6;
     let totalPages = 0;
 
-    document.getElementById("startButton").addEventListener("click", function () {
-        var sequence = document.getElementById("sequenceInput").value || 2;
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", "/run_link_anomaly?sequence=" + sequence, true);
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                result = JSON.parse(xhr.responseText);
-                window.texts = result.sequence_text;
-                const formattedTime = formatSequenceTimes(result.waktu_sequence_terpilih);
-                totalPages = Math.ceil(result.sequence_text.length / rowsPerPage);
+    $(document).ready(function () {
+        fetchData('/link_anomaly_result_detail.json');
+        $('#startButton').click(function () {
+            Swal.fire({
+                title: "Mulai Link Anomaly",
+                text: "Tekan 'Mulai' untuk memulai proses Link Anomaly",
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: "Mulai",
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    const sequenceValue = $('#sequenceInput').val() || 2;
+                    return new Promise((resolve, reject) => {
+                        $.ajax({
+                            url: "{{ url_for('pages.core.run_link_anomaly') }}",
+                            type: "GET",
+                            data: { sequence: sequenceValue },
+                            success: function (response) {
+                                if (response.error) {
+                                    reject(new Error('Gagal menjalankan Link Anomaly: ' + response.error));
+                                } else {
+                                    fetchData('/link_anomaly_result_detail.json');
+                                    resolve(response);
+                                }
+                            },
+                            error: function (xhr, status, error) {
+                                reject(new Error('AJAX error: ' + error));
+                            }
+                        });
+                    })
+                        .catch(error => {
+                            Swal.showValidationMessage(`Request failed: ${error}`);
+                        });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    Swal.fire({
+                        title: 'Selesai!',
+                        text: 'LDA berhasil diproses.',
+                        icon: 'success'
+                    });
+                    $('#hasilModelling').show();
+                    displayLdaResults(result.value.topic_word_list);
+                }
+            });
+        });
 
-                document.getElementById("sequenceNumber").innerText = result.sequence_number;
-                document.getElementById("sequenceTime").innerText = formattedTime;
-                document.getElementById("sequenceValue").innerText = result.sequence_value.toFixed(2);
-                document.getElementById("sequenceDetails").style.display = "block";
-                document.getElementById('sequenceNumberHasilAkhir').innerText = result.sequence_number;
-                document.getElementById('sequenceTimeHasilAkhir').innerText = formattedTime;
-                document.getElementById('sequenceValueHasilAkhir').innerText = result.sequence_value.toFixed(2);
-                document.getElementById("hasilCard").style.display = "block";
-                document.getElementById("detailsAccordion").style.display = "block";
-
-                updateTextsTable(result.sequence_text);
-                populateSequenceDropdown(result.probabilitas_mention_keseluruhan, 'sequenceSelector', populateProbabilityTable);
-                populateSequenceDropdown(result.probabilitas_user_keseluruhan, 'userSequenceSelector', populateUserProbabilityTable);
-                populateSequenceDropdown(result.skor_link_anomaly_keseluruhan, 'skorLinkAnomalySequenceSelector', populateLinkAnomalyScoreTable);
-                populateSequenceDropdown(result.agregasi_skor_link_anomaly_keseluruhan, 'agregasiSkorLinkAnomalySequenceSelector', populateAggregatedScoresTable);
-                populateSequenceDropdown(result.seleksi_agregasi_skor_link_anomaly_keseluruhan, 'seleksiAgregasiSkorLinkAnomalySequenceSelector', populateSeleksiAgregasiSkorLinkAnomalyTable);
-                populateCostFunctionTable(result.cost_function);
-                updateHasilAkhir(result.sequence_text, result.sequence_number, result.sequence_value);
-            }
-        };
-        xhr.send();
     });
+
+    // document.getElementById("startButton").addEventListener("click", function () {
+    //     var sequence = document.getElementById("sequenceInput").value || 2;
+    //     var xhr = new XMLHttpRequest();
+    //     xhr.open("GET", "/run_link_anomaly?sequence=" + sequence, true);
+    //     xhr.onreadystatechange = function () {
+    //         if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+    //             fetchData('/link_anomaly_result_detail.json');
+    //         }
+    //     };
+    //     xhr.send();
+    // });
 
     document.getElementById("sequenceSelector").addEventListener('change', function () {
         const selectedSequence = this.value;
@@ -503,6 +531,48 @@
                 hour12: false
             }).replace(/,/g, '').replace(/(\d+)\.(\d+)\.(\d+)/g, '$1:$2:$3');
         }).join(' - ');
+    }
+
+    function fetchData(url) {
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                result = data;
+                displayData(data);
+            })
+            .catch(error => {
+                console.error('Failed to fetch data:', error);
+            });
+    }
+
+    function displayData(data) {
+        window.texts = data.sequence_text;
+        const formattedTime = formatSequenceTimes(data.waktu_sequence_terpilih);
+        totalPages = Math.ceil(data.sequence_text.length / rowsPerPage);
+
+        document.getElementById("sequenceNumber").innerText = data.sequence_number;
+        document.getElementById("sequenceTime").innerText = formattedTime;
+        document.getElementById("sequenceValue").innerText = data.sequence_value.toFixed(2);
+        document.getElementById("sequenceDetails").style.display = "block";
+        document.getElementById('sequenceNumberHasilAkhir').innerText = data.sequence_number;
+        document.getElementById('sequenceTimeHasilAkhir').innerText = formattedTime;
+        document.getElementById('sequenceValueHasilAkhir').innerText = data.sequence_value.toFixed(2);
+        document.getElementById("hasilCard").style.display = "block";
+        document.getElementById("detailsAccordion").style.display = "block";
+
+        updateTextsTable(data.sequence_text);
+        populateSequenceDropdown(data.probabilitas_mention_keseluruhan, 'sequenceSelector', populateProbabilityTable);
+        populateSequenceDropdown(data.probabilitas_user_keseluruhan, 'userSequenceSelector', populateUserProbabilityTable);
+        populateSequenceDropdown(data.skor_link_anomaly_keseluruhan, 'skorLinkAnomalySequenceSelector', populateLinkAnomalyScoreTable);
+        populateSequenceDropdown(data.agregasi_skor_link_anomaly_keseluruhan, 'agregasiSkorLinkAnomalySequenceSelector', populateAggregatedScoresTable);
+        populateSequenceDropdown(data.seleksi_agregasi_skor_link_anomaly_keseluruhan, 'seleksiAgregasiSkorLinkAnomalySequenceSelector', populateSeleksiAgregasiSkorLinkAnomalyTable);
+        populateCostFunctionTable(data.cost_function);
+        updateHasilAkhir(data.sequence_text, data.sequence_number, data.sequence_value);
     }
 </script>
 

@@ -6,12 +6,33 @@ from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFacto
 from .db_operation import ambil_data_kotor, ambil_kamus_slangword, masukan_data_hasil_preprocessed
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 import datetime
+from functools import lru_cache
+import multiprocessing
+import logging
+
 
 load_dotenv()
 DB_HOST = os.getenv("DB_HOST")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_DATABASE = os.getenv("DB_DATABASE")
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+
+url_pattern = re.compile(r'https?://\S+|www\.\S+')
+mention_pattern = re.compile(r'@\w+')
+hashtag_pattern = re.compile(r'#\w+')
+non_alphabet_pattern = re.compile(r'[^a-zA-Z\s]')
+
+factory = StemmerFactory()
+stemmer = factory.create_stemmer()
+
+
+@lru_cache(maxsize=10000)  # Cache up to 10,000 unique words
+def cached_stem(word):
+    return stemmer.stem(word)
 
 
 def adjust_timestamp(time_str):
@@ -74,26 +95,12 @@ def replace_slangwords(tweet, slangwords):
     Returns:
         str: Teks tweet tanpa URL.
     """
-    # words = tweet.split()
-    # for i in range(len(words)):
-    #     for slangword in slangwords:
-    #         if slangword[2] == words[i]:
-    #             words[i] = slangword[1]
-
-    # result = ' '.join(words)
-    # return result
-    # Membuat dictionary dari daftar slangwords, mengabaikan id
-    # Tuple: (id, baku, slang) diubah menjadi (slang: baku)
     slang_dict = {slang: baku for _, baku, slang in slangwords}
 
-    # Memecah tweet menjadi kata-kata
     words = tweet.split()
 
-    # Mengganti slang words dengan menggunakan dictionary
-    # Hanya mengganti jika kata ada dalam dictionary
     words = [slang_dict.get(word, word) for word in words]
 
-    # Menggabungkan kembali kata-kata menjadi satu string
     return ' '.join(words)
 
 
@@ -123,8 +130,6 @@ def remove_urls(tweet):
     Returns:
         str: Teks tweet tanpa URL.
     """
-    # Pola regex untuk mendeteksi URL
-    url_pattern = r'https?://\S+|www\.\S+'
 
     # Mengganti URL dengan string kosong
     tweet_clean = re.sub(url_pattern, '', tweet)
@@ -142,8 +147,6 @@ def remove_mentions(tweet):
     Returns:
         str: Teks tweet tanpa mention.
     """
-    # Pola regex untuk mendeteksi mention
-    mention_pattern = r'@\w+'
 
     # Mengganti mention dengan string kosong
     tweet_clean = re.sub(mention_pattern, '', tweet)
@@ -161,8 +164,6 @@ def remove_hashtags(tweet):
     Returns:
         str: Teks tweet tanpa hashtag.
     """
-    # Pola regex untuk mendeteksi hashtag
-    hashtag_pattern = r'#\w+'
 
     # Mengganti hashtag dengan string kosong
     tweet_clean = re.sub(hashtag_pattern, '', tweet)
@@ -180,8 +181,6 @@ def remove_non_alphabet(tweet):
     Returns:
         str: Teks tweet hanya mengandung karakter a-z.
     """
-    # Pola regex untuk mendeteksi karakter selain a-z
-    non_alphabet_pattern = r'[^a-zA-Z\s]'
 
     # Mengganti karakter selain a-z dengan string kosong
     tweet_clean = re.sub(non_alphabet_pattern, '', tweet)
@@ -189,23 +188,33 @@ def remove_non_alphabet(tweet):
     return tweet_clean
 
 
-def stem_text(text, exclude_list):
-    factory = StemmerFactory()
-    stemmer = factory.create_stemmer()
+def stem_text(text):
 
-    # Memisahkan kata berdasarkan spasi
     words = text.split()
-    stemmed_words = []
-
-    for word in words:
-        # Cek apakah kata ada dalam daftar pengecualian
-        if word.lower() in exclude_list:
-            stemmed_words.append(word)
-        else:
-            stemmed_words.append(stemmer.stem(word))
-
-    # Gabungkan kembali kata-kata yang telah diproses
+    stemmed_words = [cached_stem(word) for word in words]
     return ' '.join(stemmed_words)
+
+
+def worker(text_data):
+    processed_data = [stem_text(text) for text in text_data]
+    return processed_data
+
+
+def parallel_stemming(data):
+    num_workers = multiprocessing.cpu_count()
+    pool = multiprocessing.Pool(num_workers)
+    chunk_size = len(data) // num_workers + 1  # Ensure all data is covered
+    data_chunks = [data[i:i + chunk_size]
+                   for i in range(0, len(data), chunk_size)]
+
+    for i, chunk in enumerate(data_chunks):
+        logging.debug(
+            f"Chunk {i+1}/{len(data_chunks)} with {len(chunk)} items assigned to a worker.")
+
+    stemmed_data = pool.map(worker, data_chunks)
+    pool.close()
+    pool.join()
+    return sum(stemmed_data, [])
 
 
 def remove_extra_spaces(tweet):
@@ -227,12 +236,11 @@ def remove_extra_spaces(tweet):
 def preprocess(datas):
     slangword = ambil_kamus_slangword()
     exclude_list = ['pemilu']
-    # print(slangword)
-    factory = StemmerFactory()
-    stemmer = factory.create_stemmer()
+    text_to_stem = []
+    additional_data = []
 
     processed_data = []
-    for data in datas:
+    for index, data in enumerate(datas):
         # Filter baris berdasarkan kolom 'full_text' yang mengandung karakter "@"
         if '@' in data[3]:
             # Menghitung jumlah "@"
@@ -268,12 +276,19 @@ def preprocess(datas):
             text = remove_stopwords(text)
 
             # Menambahkan stemming
-            text = stem_text(text, exclude_list)
+            text_to_stem.append(text)
+            additional_data.append(
+                (data[0], time, data[2], jumlah_mention, ','.join(id_user_mentioned)))
 
             processed_data.append(
                 (data[0], time, data[2], text, jumlah_mention, ','.join(id_user_mentioned)))
         else:
             continue
+
+    stemmed_texts = parallel_stemming(text_to_stem)
+    processed_data = [(ad[0], ad[1], ad[2], stemmed_texts[i], ad[3], ad[4])
+                      for i, ad in enumerate(additional_data)]
+
     return processed_data
 
 
@@ -282,7 +297,6 @@ def main():
     # preprocess_csv(directory)
     data = ambil_data_kotor()
     preprocessing = preprocess(data)
-    print(preprocessing)
 
     masukan_data_hasil_preprocessed(preprocessing)
 

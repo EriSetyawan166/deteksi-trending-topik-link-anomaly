@@ -36,6 +36,7 @@
 {% block javascript %}
 <script>
     $(document).ready(function () {
+        loadAndDisplayLdaResults();
         $('#startButton').click(function () {
             Swal.fire({
                 title: "Mulai LDA",
@@ -53,6 +54,7 @@
                                 if (response.error) {
                                     reject(new Error('Gagal menjalankan LDA: ' + response.error));
                                 } else {
+                                    loadAndDisplayLdaResults()
                                     resolve(response);
                                 }
                             },
@@ -79,12 +81,16 @@
             });
         });
 
-        function displayLdaResults(topicWordList) {
+        function displayLdaResults(data) {
             var $cardBody = $('#hasilModelling .card-body');
-            $cardBody.empty(); // Bersihkan isi sebelumnya
+            $cardBody.empty(); // Clear previous contents
 
+            // Adjust the data access to reflect actual structure:
+            var topicWordList = data.topic_word_list;
+
+            // Now iterate over the topics in the corrected topicWordList object
             Object.keys(topicWordList).forEach(function (topic) {
-                var words = topicWordList[topic].join(", ");
+                var words = topicWordList[topic].join(", "); // Join the array of words
                 var $topic = $('<div>').append($('<h5>').text(topic), $('<p>').text(words));
                 $cardBody.append($topic);
             });
@@ -118,6 +124,32 @@
                 { "data": "Text" }
             ]
         });
+
+        function loadAndDisplayLdaResults() {
+            $.ajax({
+                url: "/topic_word_list.json", // Pastikan URL ini benar
+                type: "GET",
+                success: function (response) {
+                    if (response.error) {
+                        console.error('Gagal memuat LDA: ' + response.error);
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Gagal memuat data LDA: ' + response.error,
+                            icon: 'error'
+                        });
+                    } else {
+                        displayLdaResults(response);
+                        $('#hasilModelling').show();
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('AJAX error: ' + error);
+                }
+            });
+        }
     });
+
+
+
 </script>
 {% endblock %}

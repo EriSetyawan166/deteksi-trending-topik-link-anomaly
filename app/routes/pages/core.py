@@ -5,10 +5,13 @@ import json
 from ...util import link_anomaly
 from ...util import preprocessing
 from ...util import lda
+import os
 # from models import DatasetPreprocessed
 import mysql.connector
 import locale
-from flask import jsonify
+from flask import jsonify, send_from_directory
+import cProfile
+import pstats
 
 core_bp = Blueprint("core", __name__, url_prefix="/")
 
@@ -120,18 +123,7 @@ def api_upload_csv_file():
 
                     conversation_id_str = row['id']
                     created_at = row['date']
-                    # favorite_count = row['favorite_count']
                     full_text = row['rawContent']
-                    # id_str = row['id_str']
-                    # image_url = row['image_url']
-                    # in_reply_to_screen_name = row['in_reply_to_screen_name']
-                    # lang = row['lang']
-                    # location = row['location']
-                    # quote_count = row['quote_count']
-                    # reply_count = row['reply_count']
-                    # retweet_count = row['retweet_count']
-                    # tweet_url = row['tweet_url']
-                    # user_id_str = row['user_id_str']
                     username = row['username']
 
                     sql = """INSERT INTO dataset_twitter (conversation_id_str, created_at, full_text, username) 
@@ -229,19 +221,16 @@ def run_preprocessing():
     cursor = db.cursor()
     try:
         cursor.execute(
-            "SELECT id, created_at, username, full_text FROM dataset_twitter")
+            "SELECT id, created_at, username, full_text FROM dataset_twitter limit 100")
         data = cursor.fetchall()
 
         processed_data = preprocessing.preprocess(data)
 
-        for row in processed_data:
-            insert_sql = """
+        insert_sql = """
             INSERT INTO dataset_preprocessed (id, time, user_twitter, tweet, jumlah_mention, id_user_mentioned)
             VALUES (%s, %s, %s, %s, %s, %s)
-            """
-            cursor.execute(
-                insert_sql, (row[0], row[1], row[2], row[3], row[4], row[5]))
-
+        """
+        cursor.executemany(insert_sql, processed_data)  # Batch insert
         db.commit()
         return jsonify({"success": "Data processed and stored successfully", "data": processed_data})
 
@@ -257,6 +246,13 @@ def run_preprocessing():
 @core_bp.route("/link_anomaly")
 def link_anomaly_route():
     return render_template("pages/link_anomaly.html")
+
+
+@core_bp.route('/link_anomaly_result_detail.json')
+def serve_json_link_anomaly_result_detail():
+    # Path to the file in the root directory (or specify another path if not in root)
+    directory = os.getcwd()  # This gets the current working directory
+    return send_from_directory(directory, 'link_anomaly_result_detail.json')
 
 
 @core_bp.route("/run_link_anomaly")
@@ -293,6 +289,19 @@ def run_link_anomaly():
         "cost_function": cost_function,
         "waktu_sequence_terpilih": waktu_sequence_terpilih
     }
+
+    save_to_json({
+        "sequence_number": sequence_number,
+        "sequence_value": sequence_value,
+        "sequence_text": sequence_text,
+        "probabilitas_mention_keseluruhan": probabilitas_mention_keseluruhan,
+        "probabilitas_user_keseluruhan": probabilitas_user_keseluruhan,
+        "skor_link_anomaly_keseluruhan": skor_link_anomaly_keseluruhan,
+        "agregasi_skor_link_anomaly_keseluruhan": agregasi_skor_link_anomaly_keseluruhan,
+        "seleksi_agregasi_skor_link_anomaly_keseluruhan": seleksi_agregasi_skor_link_anomaly_keseluruhan,
+        "cost_function": cost_function,
+        "waktu_sequence_terpilih": waktu_sequence_terpilih
+    }, 'link_anomaly_result_detail.json')
 
     save_to_json({
         "waktu_sequence_terpilih": waktu_sequence_terpilih,
@@ -341,6 +350,10 @@ def run_lda():
         # Mendapatkan daftar kata untuk setiap topik
         topic_word_list = lda.get_topic_word_list(topic_word_counts, K)
 
+        save_to_json({
+            "topic_word_list": topic_word_list,
+        }, 'topic_word_list.json')
+
         return jsonify({"topic_word_list": topic_word_list})
 
     except FileNotFoundError:
@@ -356,3 +369,91 @@ def run_lda():
 @core_bp.route("/pengujian")
 def pengujian_route():
     return render_template("pages/pengujian.html")
+
+
+@core_bp.route("api/pengujian/upload_csv_file", methods=['POST'])
+def api_pengujian_upload_csv_file():
+    db = create_db_connection()
+    cursor = db.cursor()
+    if 'fileInput' not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    file = request.files['fileInput']
+
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    if file and file.filename.endswith('.csv'):
+        try:
+            # Simpan file CSV ke direktori server (misalnya 'uploads/')
+            file.save('tweets-data/' + file.filename)
+
+            # Proses file CSV
+            with open('tweets-data/' + file.filename, 'r', encoding='utf-8') as csvfile:
+                csvreader = csv.DictReader(csvfile)
+                for row in csvreader:
+                    ground_truth_topic = row['Ground Truth Topic']
+                    ground_truth_keyword = row['Ground Truth Keyword']
+                    sql = """INSERT INTO ground_data_truth (ground_truth_topic, ground_truth_keyword) 
+                            VALUES (%s, %s)"""
+                    values = (ground_truth_topic, ground_truth_keyword)
+
+                    cursor.execute(sql, values)
+                    db.commit()
+
+            return jsonify({"message": "CSV file uploaded and processed successfully"}), 200
+        except Exception as e:
+            return jsonify({"error": "Failed to process CSV file: " + str(e)}), 500
+    else:
+        return jsonify({"error": "Invalid file format, please upload a CSV file"}), 400
+
+
+@core_bp.route("api/pengujian/delete_all_data", methods=['DELETE'])
+def api_pengujian_delete_all_data():
+    db = create_db_connection()
+    cursor = db.cursor()
+    cursor.execute(
+        "DELETE FROM ground_data_truth")
+    db.commit()
+    return jsonify({"message": "All data deleted successfully"})
+
+
+@core_bp.route("/api/data/pengujian")
+def api_data_pengujian():
+    db = create_db_connection()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM ground_data_truth")
+    data = cursor.fetchall()
+
+    response_data = []
+    for row in data:
+        row_data = {
+            "id": row[0],
+            "ground_truth_topic": row[1],
+            "ground_truth_keyword": row[2],
+        }
+        response_data.append(row_data)
+
+    return jsonify({"data": response_data})
+
+
+@core_bp.route("/api/data/hasil_lda")
+def hasil_lda():
+    try:
+        with open('topic_word_list.json', 'r') as file:
+            data = json.load(file)
+
+        return jsonify(data)
+
+    except FileNotFoundError:
+        return jsonify({"error": "File not found"}), 404
+
+    except json.JSONDecodeError:
+        return jsonify({"error": "Error decoding JSON"}), 500
+
+
+@core_bp.route('/topic_word_list.json')
+def serve_json():
+    # Path to the file in the root directory (or specify another path if not in root)
+    directory = os.getcwd()  # This gets the current working directory
+    return send_from_directory(directory, 'topic_word_list.json')

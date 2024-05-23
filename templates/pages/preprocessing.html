@@ -131,11 +131,20 @@
                             confirmButtonText: "Mulai",
                             showLoaderOnConfirm: true,
                             preConfirm: () => {
+                                const startTime = new Date(); // Capture start time
                                 return new Promise((resolve, reject) => {
                                     $.ajax({
                                         url: "{{ url_for('pages.core.run_preprocessing') }}",
                                         type: "POST",
                                         success: function (response) {
+                                            const endTime = new Date(); // Capture end time
+                                            const duration = new Date(endTime - startTime); // Calculate duration
+                                            const formattedDuration = [
+                                                duration.getUTCHours().toString().padStart(2, '0'),
+                                                duration.getUTCMinutes().toString().padStart(2, '0'),
+                                                duration.getUTCSeconds().toString().padStart(2, '0')
+                                            ].join(':'); // Format duration as hh:mm:ss
+                                            response.duration = formattedDuration; // Add duration to response
                                             resolve(response);
                                         },
                                         error: function (xhr, status, error) {
@@ -149,10 +158,10 @@
                             },
                             allowOutsideClick: () => !Swal.isLoading()
                         }).then((result) => {
-                            if (result.isConfirmed) {
+                            if (result.isConfirmed && result.value) {
                                 Swal.fire({
                                     title: 'Selesai!',
-                                    text: 'Preprocessing telah berhasil dilakukan.',
+                                    text: `Preprocessing telah berhasil dilakukan. Waktu yang diperlukan: ${result.value.duration}`,
                                     confirmButtonText: 'Lihat Hasil',
                                     icon: 'success'
                                 });
