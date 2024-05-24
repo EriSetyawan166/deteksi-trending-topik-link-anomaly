@@ -9,6 +9,10 @@ import datetime
 from functools import lru_cache
 import multiprocessing
 import logging
+from tqdm import tqdm
+from flask_socketio import emit
+from app import socketio
+import time
 
 
 load_dotenv()
@@ -195,26 +199,31 @@ def stem_text(text):
     return ' '.join(stemmed_words)
 
 
-def worker(text_data):
-    processed_data = [stem_text(text) for text in text_data]
-    return processed_data
+def worker(data_chunk, slangwords, progress_queue, start_time, total_data):
+    processed_chunk = []
+    additional_data_chunk = []
 
+    for data in tqdm(data_chunk, desc="Processing", position=0):
+        if '@' in data[3]:
+            jumlah_mention = data[3].count('@')
+            id_user_mentioned = re.findall(r'(@\w+)', data[3])
+            time_change = adjust_timestamp(data[1])
+            text = data[3].lower()
+            text = remove_urls(text)
+            text = remove_mentions(text)
+            text = remove_hashtags(text)
+            text = remove_non_alphabet(text)
+            text = remove_extra_spaces(text)
+            text = replace_slangwords(text, slangwords)
+            text = remove_stopwords(text)
+            text = stem_text(text)
+            additional_data_chunk.append(
+                (data[0], time_change, data[2], jumlah_mention, ','.join(id_user_mentioned)))
+            processed_chunk.append(
+                (data[0], time_change, data[2], text, jumlah_mention, ','.join(id_user_mentioned)))
+        progress_queue.put(1)  # Send progress update
 
-def parallel_stemming(data):
-    num_workers = multiprocessing.cpu_count()
-    pool = multiprocessing.Pool(num_workers)
-    chunk_size = len(data) // num_workers + 1  # Ensure all data is covered
-    data_chunks = [data[i:i + chunk_size]
-                   for i in range(0, len(data), chunk_size)]
-
-    for i, chunk in enumerate(data_chunks):
-        logging.debug(
-            f"Chunk {i+1}/{len(data_chunks)} with {len(chunk)} items assigned to a worker.")
-
-    stemmed_data = pool.map(worker, data_chunks)
-    pool.close()
-    pool.join()
-    return sum(stemmed_data, [])
+    return processed_chunk, additional_data_chunk
 
 
 def remove_extra_spaces(tweet):
@@ -235,61 +244,68 @@ def remove_extra_spaces(tweet):
 
 def preprocess(datas):
     slangword = ambil_kamus_slangword()
-    exclude_list = ['pemilu']
-    text_to_stem = []
-    additional_data = []
+    num_workers = multiprocessing.cpu_count()
+    pool = multiprocessing.Pool(num_workers)
+    chunk_size = len(datas) // num_workers + 1
+    data_chunks = [datas[i:i + chunk_size]
+                   for i in range(0, len(datas), chunk_size)]
+
+    manager = multiprocessing.Manager()
+    progress_queue = manager.Queue()
+
+    logging.info(f'Total chunks: {len(data_chunks)}, Chunk size: {chunk_size}')
+
+    results = []
+    start_time = time.time()
+    for chunk in data_chunks:
+        result = pool.apply_async(worker, args=(
+            chunk, slangword, progress_queue, start_time, len(datas)))
+        results.append(result)
+
+    pool.close()
+
+    total_progress = 0
+    total_data = len(datas)
+
+    with tqdm(total=total_data, desc="Overall Progress") as pbar:
+        while total_progress < total_data:
+            progress_queue.get()
+            total_progress += 1
+            pbar.update(1)
+
+            # Calculate ETA
+            elapsed_time = time.time() - start_time
+            eta_seconds = elapsed_time / total_progress * \
+                (total_data - total_progress) if total_progress > 0 else 0
+            eta = time.strftime("%H:%M:%S", time.gmtime(eta_seconds))
+
+            # Emit progress to the client
+            socketio.emit('progress_cleansing_stemming', {
+                'current': total_progress,
+                'total': total_data,
+                'eta': eta
+            })
+
+    pool.join()
 
     processed_data = []
-    for index, data in enumerate(datas):
-        # Filter baris berdasarkan kolom 'full_text' yang mengandung karakter "@"
-        if '@' in data[3]:
-            # Menghitung jumlah "@"
-            jumlah_mention = data[3].count('@')
-
-            # Ekstrak semua user yang disebutkan
-            id_user_mentioned = re.findall(r'(@\w+)', data[3])
-
-            time = adjust_timestamp(data[1])
-
-            # Mengubah teks menjadi lowercase
-            text = data[3].lower()
-
-            # Menghapus url
-            text = remove_urls(text)
-
-            # Menghapus mention
-            text = remove_mentions(text)
-
-            # Menghapus hastags
-            text = remove_hashtags(text)
-
-            # Menghapus huruf selain a-z
-            text = remove_non_alphabet(text)
-
-            # Menghapus spasi berjarak
-            text = remove_extra_spaces(text)
-
-            # mengubah slangword
-            text = replace_slangwords(text, slangword)
-
-            # Menghapus stopword
-            text = remove_stopwords(text)
-
-            # Menambahkan stemming
-            text_to_stem.append(text)
-            additional_data.append(
-                (data[0], time, data[2], jumlah_mention, ','.join(id_user_mentioned)))
-
-            processed_data.append(
-                (data[0], time, data[2], text, jumlah_mention, ','.join(id_user_mentioned)))
-        else:
-            continue
-
-    stemmed_texts = parallel_stemming(text_to_stem)
-    processed_data = [(ad[0], ad[1], ad[2], stemmed_texts[i], ad[3], ad[4])
-                      for i, ad in enumerate(additional_data)]
+    additional_data = []
+    for result in results:
+        chunk_processed_data, chunk_additional_data = result.get()
+        processed_data.extend(chunk_processed_data)
+        additional_data.extend(chunk_additional_data)
 
     return processed_data
+
+
+def main():
+    data = ambil_data_kotor()
+    preprocessing = preprocess(data)
+    masukan_data_hasil_preprocessed(preprocessing)
+
+
+if __name__ == "__main__":
+    main()
 
 
 def main():

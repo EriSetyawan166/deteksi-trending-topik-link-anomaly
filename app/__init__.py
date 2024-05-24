@@ -1,9 +1,13 @@
 # Flask modules
 from flask import Flask
 import mysql.connector
+from flask_socketio import SocketIO
+
 
 # Other modules
 import os
+
+socketio = SocketIO()
 
 
 def create_app(debug: bool = False):
@@ -19,6 +23,7 @@ def create_app(debug: bool = False):
         static_folder="../static",
         static_url_path="/",
     )
+    socketio.init_app(app)
 
     # Set current_app context
     app.app_context().push()

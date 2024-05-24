@@ -221,7 +221,7 @@ def run_preprocessing():
     cursor = db.cursor()
     try:
         cursor.execute(
-            "SELECT id, created_at, username, full_text FROM dataset_twitter limit 100")
+            "SELECT id, created_at, username, full_text FROM dataset_twitter")
         data = cursor.fetchall()
 
         processed_data = preprocessing.preprocess(data)
@@ -241,6 +241,17 @@ def run_preprocessing():
     finally:
         cursor.close()
         db.close()
+
+
+@core_bp.route("/cancel_preprocessing", methods=["POST"])
+def cancel_preprocessing():
+    global processing_pool
+    if processing_pool is not None:
+        processing_pool.terminate()  # Terminate the pool
+        processing_pool = None
+        return jsonify({"message": "Preprocessing cancelled successfully"}), 200
+    else:
+        return jsonify({"error": "No active preprocessing"}), 400
 
 
 @core_bp.route("/link_anomaly")
