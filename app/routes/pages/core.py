@@ -5,6 +5,7 @@ import json
 from ...util import link_anomaly
 from ...util import preprocessing
 from ...util import lda
+from ...util import PoolManager
 import os
 # from models import DatasetPreprocessed
 import mysql.connector
@@ -14,6 +15,7 @@ import cProfile
 import pstats
 
 core_bp = Blueprint("core", __name__, url_prefix="/")
+processing_pool = None
 
 
 def save_to_json(data, filename):
@@ -245,10 +247,8 @@ def run_preprocessing():
 
 @core_bp.route("/cancel_preprocessing", methods=["POST"])
 def cancel_preprocessing():
-    global processing_pool
-    if processing_pool is not None:
-        processing_pool.terminate()  # Terminate the pool
-        processing_pool = None
+    if PoolManager.get_pool() is not None:
+        PoolManager.terminate_pool()
         return jsonify({"message": "Preprocessing cancelled successfully"}), 200
     else:
         return jsonify({"error": "No active preprocessing"}), 400

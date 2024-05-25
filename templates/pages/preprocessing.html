@@ -82,16 +82,14 @@
 <script>
     var socket = io();
     socket.on('progress_cleansing_stemming', function (data) {
-        var progress = Math.round(data.current / data.total * 100);
-        document.getElementById('progressBarCleansingStemming').style.width = progress + '%';
-        Swal.update({
-            html: 'Cleansing & Stemming Progress: <b style="color: green;">' + progress + '%</b><br>' +
-                '<div id="progressBarContainerCleansingStemming" style="width: 100%; background-color: #ddd;">' +
-                '<div id="progressBarCleansingStemming" style="width: ' + progress + '%; height: 20px; background-color: #4CAF50;"></div></div>' +
-                'Data yang diproses: ' + data.current + ' dari ' + data.total + '<br>' +
-                'ETA: ' + data.eta
-        });
+        var progress = Math.round((data.current / data.total) * 100);  // menghitung progress
+        $('#progressBarCleansingStemming').css('width', progress + '%');  // update progress bar
+        $('#progressText').html('Cleansing & Stemming Progress: <b style="color: green;">' + progress + '%</b><br>' +
+            'Data yang diproses: ' + data.current + ' dari ' + data.total + '<br>' +
+            'ETA: ' + data.eta);  // update teks di modal
     });
+
+
 
     $(document).ready(function () {
         var table = $('#dataTable').DataTable({
@@ -143,19 +141,23 @@
                         Swal.fire({
                             title: "Mulai Preprocessing",
                             text: "Tekan 'Mulai' untuk memulai preprocessing",
-                            html: 'Cleansing & Stemming Progress: <b style="color: green;">0%</b><br>' +
-                                '<div id="progressBarContainerCleansingStemming" style="width: 100%; background-color: #ddd;">' +
+                            html: '<div id="progressBarContainerCleansingStemming" style="width: 100%; background-color: #ddd;">' +
                                 '<div id="progressBarCleansingStemming" style="width: 0%; height: 20px; background-color: #4CAF50;"></div></div>' +
-                                'Data yang diproses: 0 dari ' + response.total_count + '<br>' +
-                                'ETA: --:--:--',
+                                '<p id="progressText">Cleansing & Stemming Progress: <b style="color: green;">0%</b><br>' +
+                                'Data yang diproses: 0 dari --<br>' +
+                                'ETA: --:--:--</p>',
                             icon: 'info',
-                            showCancelButton: true,
+                            showCancelButton: false,
+                            showDenyButton: true,
+                            denyButtonText: "Batal",
                             confirmButtonText: "Mulai",
                             cancelButtonText: "Batal",
                             showLoaderOnConfirm: true,
                             allowOutsideClick: () => !Swal.isLoading(),
                             preConfirm: () => {
                                 Swal.showLoading();
+                                Swal.getCancelButton().removeAttribute('disabled')
+                                Swal.getDenyButton().removeAttribute('disabled')
                                 const startTime = new Date(); // Capture start time
                                 return new Promise((resolve, reject) => {
                                     $.ajax({
@@ -184,12 +186,12 @@
                             },
                             allowOutsideClick: () => !Swal.isLoading()
                         }).then((result) => {
-                            if (result.dismiss === Swal.DismissReason.cancel) {
+                            if (result.isDenied) {
                                 $.ajax({
                                     url: "{{ url_for('pages.core.cancel_preprocessing') }}",
                                     type: "POST",
                                     success: function (response) {
-                                        Swal.fire('Cancelled', 'Preprocessing has been cancelled.', 'info');
+                                        Swal.fire('Dibatalkan', 'Preprocessing dibatalkan.', 'info');
                                     },
                                     error: function (xhr) {
                                         console.error("Failed to cancel preprocessing", xhr);

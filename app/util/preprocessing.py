@@ -4,6 +4,7 @@ import re
 from dotenv import load_dotenv
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 from .db_operation import ambil_data_kotor, ambil_kamus_slangword, masukan_data_hasil_preprocessed
+from .multiprocessing_manager import PoolManager
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 import datetime
 from functools import lru_cache
@@ -245,7 +246,7 @@ def remove_extra_spaces(tweet):
 def preprocess(datas):
     slangword = ambil_kamus_slangword()
     num_workers = multiprocessing.cpu_count()
-    pool = multiprocessing.Pool(num_workers)
+    pool = PoolManager.create_pool()
     chunk_size = len(datas) // num_workers + 1
     data_chunks = [datas[i:i + chunk_size]
                    for i in range(0, len(datas), chunk_size)]
@@ -294,7 +295,7 @@ def preprocess(datas):
         chunk_processed_data, chunk_additional_data = result.get()
         processed_data.extend(chunk_processed_data)
         additional_data.extend(chunk_additional_data)
-
+    PoolManager.terminate_pool()
     return processed_data
 
 
