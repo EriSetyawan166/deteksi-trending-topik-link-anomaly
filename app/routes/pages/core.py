@@ -53,15 +53,21 @@ def api_data():
     db = create_db_connection()
     cursor = db.cursor()
     cursor.execute(
-        "SELECT username, created_at, full_text FROM dataset_twitter")
+        "SELECT * FROM dataset_twitter")
     data = cursor.fetchall()
-
     for row in data:
-        username, created_at, full_text = row
         row_data = {
-            "username": username,
-            "created_at": created_at,
-            "full_text": full_text,
+            "id": row[0],
+            "url": row[1],
+            "date": row[2],
+            "username": row[3],
+            "displayname": row[4],
+            "description": row[5],
+            "followersCount": row[6],
+            "friendsCount": row[7],
+            "statusesCount": row[8],
+            "location": row[9],
+            "rawContent": row[10]
         }
         response_data.append(row_data)
     return jsonify({"data": response_data})
@@ -98,46 +104,32 @@ def api_upload_csv_file():
             with open('tweets-data/' + file.filename, 'r', encoding='utf-8') as csvfile:
                 csvreader = csv.DictReader(csvfile)
                 for row in csvreader:
-                    # Lakukan sesuatu dengan setiap baris (contoh: simpan ke database)
-                    # conversation_id_str = row['conversation_id_str']
-                    # created_at = row['created_at']
-                    # favorite_count = row['favorite_count']
-                    # full_text = row['full_text']
-                    # id_str = row['id_str']
-                    # image_url = row['image_url']
-                    # in_reply_to_screen_name = row['in_reply_to_screen_name']
-                    # lang = row['lang']
-                    # location = row['location']
-                    # quote_count = row['quote_count']
-                    # reply_count = row['reply_count']
-                    # retweet_count = row['retweet_count']
-                    # tweet_url = row['tweet_url']
-                    # user_id_str = row['user_id_str']
-                    # username = row['username']
-
-                    # sql = """INSERT INTO dataset_twitter (conversation_id_str, created_at, favorite_count, full_text, id_str,
-                    #         image_url, in_reply_to_screen_name, lang, location, quote_count, reply_count, retweet_count,
-                    #         tweet_url, user_id_str, username)
-                    #         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-                    # values = (conversation_id_str, created_at, favorite_count, full_text, id_str, image_url,
-                    #           in_reply_to_screen_name, lang, location, quote_count, reply_count, retweet_count,
-                    #           tweet_url, user_id_str, username)
-
-                    conversation_id_str = row['id']
-                    created_at = row['date']
-                    full_text = row['rawContent']
+                    url = row['url']
+                    date = row['date']
                     username = row['username']
+                    displayname = row['displayname']
+                    description = row['description']
+                    # Convert to int, assuming numeric fields
+                    followersCount = int(row['followersCount'])
+                    # Convert to int, assuming numeric fields
+                    friendsCount = int(row['friendsCount'])
+                    # Convert to int, assuming numeric fields
+                    statusesCount = int(row['statusesCount'])
+                    location = row['location']
+                    rawContent = row['rawContent']
 
-                    sql = """INSERT INTO dataset_twitter (conversation_id_str, created_at, full_text, username) 
-                            VALUES (%s, %s, %s, %s)"""
-                    values = (conversation_id_str,
-                              created_at, full_text, username)
+                    sql = """INSERT INTO dataset_twitter (url, date, username, displayname, description, followersCount,
+                                         friendsCount, statusesCount, location, rawContent)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                    values = (url, date, username, displayname, description, followersCount,
+                              friendsCount, statusesCount, location, rawContent)
 
                     cursor.execute(sql, values)
                     db.commit()
 
             return jsonify({"message": "CSV file uploaded and processed successfully"}), 200
         except Exception as e:
+            print("error Failed to process CSV file: " + str(e))
             return jsonify({"error": "Failed to process CSV file: " + str(e)}), 500
     else:
         return jsonify({"error": "Invalid file format, please upload a CSV file"}), 400
@@ -272,10 +264,29 @@ def run_link_anomaly():
     db = create_db_connection()
 
     cursor = db.cursor()
-    cursor.execute("SELECT * FROM dataset_preprocessed ORDER BY time ASC")
+    cursor.execute(
+        "SELECT * FROM dataset_preprocessed ORDER BY time ASC")
     data = cursor.fetchall()
 
     sequence = int(request.args.get('sequence', '2'))
+
+    default_response = {
+        "sequence_number": None,
+        "sequence_value": None,
+        "sequence_text": [],
+        "probabilitas_mention_keseluruhan": {},
+        "probabilitas_user_keseluruhan": {},
+        "skor_link_anomaly_keseluruhan": {},
+        "agregasi_skor_link_anomaly_keseluruhan": {},
+        "seleksi_agregasi_skor_link_anomaly_keseluruhan": {},
+        "cost_function": [],
+        "waktu_sequence_terpilih": [],
+        "info_message": "Jumlah sequence melebihi jumlah data yang tersedia."
+    }
+
+    if sequence >= len(data):
+        # Kembali dengan data default jika sequence tidak memadai
+        return jsonify(default_response)
 
     hasil = link_anomaly(data, sequence)
 
@@ -287,6 +298,11 @@ def run_link_anomaly():
     agregasi_skor_link_anomaly_keseluruhan = hasil[6]
     seleksi_agregasi_skor_link_anomaly_keseluruhan = hasil[7]
     cost_function = hasil[8]
+    info_message = ""
+
+    if not cost_function:
+        info_message = "Agregasi skor link anomaly tidak cukup"
+
     waktu_sequence_terpilih = hasil[9]
     response_data = {
         "sequence_number": sequence_number,
@@ -298,7 +314,8 @@ def run_link_anomaly():
         "agregasi_skor_link_anomaly_keseluruhan": agregasi_skor_link_anomaly_keseluruhan,
         "seleksi_agregasi_skor_link_anomaly_keseluruhan": seleksi_agregasi_skor_link_anomaly_keseluruhan,
         "cost_function": cost_function,
-        "waktu_sequence_terpilih": waktu_sequence_terpilih
+        "waktu_sequence_terpilih": waktu_sequence_terpilih,
+        "info_message": info_message
     }
 
     save_to_json({
@@ -345,22 +362,27 @@ def hasil_link_anomaly():
 @core_bp.route('/run_lda', methods=['GET'])
 def run_lda():
     try:
+        print("jalan")
         # Membaca data dari file JSON
         with open('link_anomaly_result.json', 'r') as file:
             data = json.load(file)
             sequence_texts = data.get('sequence_text', [])
+
+        if not sequence_texts:  # Jika sequence_text kosong
+            return jsonify({"error": "LDA gagal dilakukan karena belum ada hasil link anomaly"}), 400
         # print(sequence_texts)
         # Tokenisasi data
         tokenized_data = lda.tokenize_data(sequence_texts)
 
         # Menjalankan LDA
-        K = 1  # Jumlah topik
+        K = 5  # Jumlah topik
         max_iteration = 1000  # Iterasi maksimum
-        topic_word_counts, document_topic_counts = lda.run_lda(
+        topic_word_counts, document_topic_counts, document_lengths, topic_counts, W = lda.run_lda(
             tokenized_data, K, max_iteration)
         # Mendapatkan daftar kata untuk setiap topik
-        topic_word_list = lda.get_topic_word_list(topic_word_counts, K)
-
+        topic_word_list = lda.get_topic_word_list(topic_word_counts, document_topic_counts,
+                                                  document_lengths, topic_counts, K, W)
+        print(topic_word_list)
         save_to_json({
             "topic_word_list": topic_word_list,
         }, 'topic_word_list.json')

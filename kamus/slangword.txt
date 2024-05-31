@@ -841,7 +841,7 @@ pelatda	pemusatan latihan daerah
 pelatnas	pemusatan latihan nasional
 pembokat	pembantu
 pemda	pemerintah daerah
-pemilu	pemilihan umum
+pemilu	pemilu
 pemkot	pemerintah kota
 pemprov	pemerintah provinsi
 pemred	pemimpin redaksi

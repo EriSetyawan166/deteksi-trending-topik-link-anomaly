@@ -395,9 +395,23 @@ def link_anomaly(data, sequence=2):
     cleaned_agregasi_skor_anomaly_per_sequence.append(
         periksa_agregasi_diskrit(agregasi_skor_anomaly_per_sequence))
 
-    # menghitung cost function
+    if all(value is None for sublist in cleaned_agregasi_skor_anomaly_per_sequence for _, value in sublist):
+        result_cost_function = []
+        result_cost_function_minimum = [None, None]
+        teks_dari_sequence_terpilih = []
+        waktu_dari_sequence_terpilih = []
+        return result_cost_function_minimum, teks_dari_sequence_terpilih, sequences, probabilitas_mention_keseluruhan, probabilitas_mention_user_keseluruhan, skor_link_anomaly_keseluruhan, agregasi_skor_link_anomaly_keseluruhan, seleksi_agregasi_skor_link_anomaly_keseluruhan, result_cost_function, waktu_dari_sequence_terpilih
+
+        # menghitung cost function
     result_cost_function = hitung_cost_function(
         cleaned_agregasi_skor_anomaly_per_sequence)
+
+    if not result_cost_function:
+        result_cost_function = []
+        result_cost_function_minimum = [None, None]
+        teks_dari_sequence_terpilih = []
+        waktu_dari_sequence_terpilih = []
+        return result_cost_function_minimum, teks_dari_sequence_terpilih, sequences, probabilitas_mention_keseluruhan, probabilitas_mention_user_keseluruhan, skor_link_anomaly_keseluruhan, agregasi_skor_link_anomaly_keseluruhan, seleksi_agregasi_skor_link_anomaly_keseluruhan, result_cost_function, waktu_dari_sequence_terpilih
 
     # mengambil cost function minimum
     result_cost_function_minimum = cari_cost_function_minimum(

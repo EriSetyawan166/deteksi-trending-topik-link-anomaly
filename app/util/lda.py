@@ -144,21 +144,25 @@ def run_lda(documents, K, max_iteration):
     gibbs_sample(documents, K, max_iteration, document_topic_counts,
                  topic_word_counts, topic_counts, document_lengths, document_topics, W)
 
-    return topic_word_counts, document_topic_counts
+    return topic_word_counts, document_topic_counts, document_lengths, topic_counts, W
+
 
 # Fungsi untuk mendapatkan daftar kata untuk setiap topik
 
 
-def get_topic_word_list(topic_word_counts, K):
+def get_topic_word_list(topic_word_counts, document_topic_counts, document_lengths, topic_counts, K, W, alpha=0.1, beta=0.1):
     topic_word_list = {}
     for topic in range(K):
         data = []
         for word, count in topic_word_counts[topic].most_common():
             if count > 1:
-                data.append(word)
+                weight = p_word_given_topic(word, topic, topic_word_counts, topic_counts, W, beta) * \
+                    (topic_word_counts[topic][word] / topic_counts[topic])
+                data.append((word, weight))
         if len(data) > 15:
             data = data[:15]
         topic_word_list[f"Topik {topic+1}"] = data
+        # print(topic_word_list)
     return topic_word_list
 
 
@@ -185,15 +189,17 @@ if __name__ == '__main__':
     tokenized_data = tokenize_data(data)
 
     # Menjalankan LDA
-    K = 1  # Jumlah topik
+    K = 2  # Jumlah topik
     max_iteration = 1000  # Iterasi maksimum
-    topic_word_counts, document_topic_counts = run_lda(
+    topic_word_counts, document_topic_counts, document_lengths, topic_counts, W = run_lda(
         tokenized_data, K, max_iteration)
 
     # Mendapatkan daftar kata untuk setiap topik
     # print(topic_word_counts)
-    topic_word_list = get_topic_word_list(topic_word_counts, K)
+    topic_word_list = get_topic_word_list(topic_word_counts, document_topic_counts,
+                                          document_lengths, topic_counts, K, W)
 
     # Menampilkan topik dan kata-kata terkait
     for topic, words in topic_word_list.items():
-        print(f"{topic}: {', '.join(words)}")
+        formatted_words = [f"{word}: {weight:.4f}" for word, weight in words]
+        print(f"{topic}: {', '.join(formatted_words)}")

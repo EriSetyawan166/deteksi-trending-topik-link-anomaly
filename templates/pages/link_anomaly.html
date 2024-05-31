@@ -293,8 +293,13 @@
                             type: "GET",
                             data: { sequence: sequenceValue },
                             success: function (response) {
-                                if (response.error) {
-                                    reject(new Error('Gagal menjalankan Link Anomaly: ' + response.error));
+                                if (response.info_message) {
+                                    Swal.fire({
+                                        title: 'Gagal mendapatkan nilai Link Anomaly',
+                                        text: response.info_message,
+                                        icon: 'error'
+                                    });
+                                    fetchData('/link_anomaly_result_detail.json');
                                 } else {
                                     fetchData('/link_anomaly_result_detail.json');
                                     resolve(response);
@@ -555,13 +560,13 @@
         const formattedTime = formatSequenceTimes(data.waktu_sequence_terpilih);
         totalPages = Math.ceil(data.sequence_text.length / rowsPerPage);
 
-        document.getElementById("sequenceNumber").innerText = data.sequence_number;
-        document.getElementById("sequenceTime").innerText = formattedTime;
-        document.getElementById("sequenceValue").innerText = data.sequence_value.toFixed(2);
+        document.getElementById("sequenceNumber").innerText = data.sequence_number || null;
+        document.getElementById("sequenceTime").innerText = formattedTime;  // Pastikan format waktu sudah benar dan ditangani di fungsi format
+        document.getElementById("sequenceValue").innerText = (data.sequence_value || 0).toFixed(2);
         document.getElementById("sequenceDetails").style.display = "block";
-        document.getElementById('sequenceNumberHasilAkhir').innerText = data.sequence_number;
-        document.getElementById('sequenceTimeHasilAkhir').innerText = formattedTime;
-        document.getElementById('sequenceValueHasilAkhir').innerText = data.sequence_value.toFixed(2);
+        document.getElementById('sequenceNumberHasilAkhir').innerText = data.sequence_number || null;
+        document.getElementById('sequenceTimeHasilAkhir').innerText = formattedTime; // Asumsi waktu sudah diformat sebelumnya
+        document.getElementById('sequenceValueHasilAkhir').innerText = (data.sequence_value || 0).toFixed(2);
         document.getElementById("hasilCard").style.display = "block";
         document.getElementById("detailsAccordion").style.display = "block";
 

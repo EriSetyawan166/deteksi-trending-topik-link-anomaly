@@ -59,7 +59,20 @@
                                 }
                             },
                             error: function (xhr, status, error) {
-                                reject(new Error('AJAX error: ' + error));
+                                // Mengecek status error dari server dan menyesuaikan pesan error
+                                if (xhr.status === 400) {
+                                    Swal.fire({
+                                        title: 'Gagal Melakukan Modelling',
+                                        text: xhr.responseJSON.error,
+                                        icon: 'error'
+                                    });
+                                } else if (xhr.status === 404) {
+                                    reject(new Error('File not found'));
+                                } else if (xhr.status === 500) {
+                                    reject(new Error('Server error: ' + xhr.responseJSON.error));
+                                } else {
+                                    reject(new Error('AJAX error: ' + error));
+                                }
                             }
                         });
                     })
@@ -90,8 +103,12 @@
 
             // Now iterate over the topics in the corrected topicWordList object
             Object.keys(topicWordList).forEach(function (topic) {
-                var words = topicWordList[topic].join(", "); // Join the array of words
-                var $topic = $('<div>').append($('<h5>').text(topic), $('<p>').text(words));
+                // Map each word and its weight to the format "word = weight"
+                var formattedWords = topicWordList[topic].map(function (item) {
+                    return item[0] + " = " + item[1].toFixed(6); // Format the number to six decimal places
+                }).join(", "); // Join the formatted strings with comma
+
+                var $topic = $('<div>').append($('<h5>').text(topic), $('<p>').text(formattedWords));
                 $cardBody.append($topic);
             });
         }
