@@ -4,64 +4,124 @@ import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import string
-# Fungsi untuk mentokenisasi data dalam bahasa Indonesia
 
 
 def tokenize_data(data):
-    # Set stop words dalam bahasa Indonesia
+    """
+    Tokenisasi data teks menjadi token alfanumerik dalam huruf kecil.
+
+    Parameter:
+    - data (list of str): List yang berisi string teks untuk di-tokenisasi.
+
+    Return:
+    - list of list of str: List dari list token untuk setiap string input.
+    """
     tokens_list = []
 
     for text in data:
-        # Tokenisasi dan konversi ke huruf kecil
         tokens = word_tokenize(text.lower())
-        # Hapus punctuation dan stop words
         tokens = [word for word in tokens if word.isalnum()]
         tokens_list.append(tokens)
 
     return tokens_list
 
-# Fungsi untuk memilih indeks berdasarkan bobot
-
 
 def sample_from_weights(weights):
-    # print('bobot', weights)
+    """
+    Memilih indeks berdasarkan distribusi bobot yang diberikan.
+
+    Parameter:
+    - weights (list of float): List bobot untuk sampling.
+
+    Return:
+    - int: Indeks yang dipilih berdasarkan bobot.
+    """
     total = sum(weights)
     rnd = total * random.random()
-    # print('nilai acak', rnd)
     for i, w in enumerate(weights):
         rnd -= w
         if rnd <= 0:
-            # print('nilai terpilih', rnd, i)
-            return i  # mengembalikan indeks
-
-# Fungsi untuk menghitung probabilitas topik diberikan dokumen
+            return i
 
 
 def p_topic_given_document(topic, d, document_topic_counts, document_lengths, K, alpha=0.1):
-    # print('jumlah topik sebuah dokumen', document_topic_counts[d][topic])
-    # print('panjang dokumen', document_lengths)
+    """
+    Menghitung probabilitas topik tertentu diberikan sebuah dokumen.
+
+    Parameter:
+    - topic (int): Indeks topik.
+    - d (int): Indeks dokumen.
+    - document_topic_counts (list of Counter): Counter jumlah topik per dokumen.
+    - document_lengths (list of int): List panjang setiap dokumen.
+    - K (int): Jumlah topik total.
+    - alpha (float, optional): Parameter alpha untuk smoothing, default 0.1.
+
+    Return:
+    - float: Probabilitas topik diberikan dokumen.
+    """
     return ((document_topic_counts[d][topic] + alpha) /
             (document_lengths[d] + K * alpha))
 
-# Fungsi untuk menghitung probabilitas kata diberikan topik
-
 
 def p_word_given_topic(word, topic, topic_word_counts, topic_counts, W, beta=0.1):
-    # print('jumlah topik pada sebuah kata', topic_word_counts[topic][word])
-    # print('jumlah topik', topic_counts[topic])
+    """
+    Menghitung probabilitas kata diberikan topik.
+
+    Parameter:
+    - word (str): Kata.
+    - topic (int): Indeks topik.
+    - topic_word_counts (list of Counter): Counter jumlah kata per topik.
+    - topic_counts (list of int): Jumlah kata per topik.
+    - W (int): Jumlah kata unik di semua dokumen.
+    - beta (float, optional): Parameter beta untuk smoothing, default 0.1.
+
+    Return:
+    - float: Probabilitas kata diberikan topik.
+    """
     return ((topic_word_counts[topic][word] + beta) /
             (topic_counts[topic] + W * beta))
 
-# Fungsi untuk menghitung bobot topik untuk kata tertentu dalam dokumen
-
 
 def topic_weight(d, word, topic, document_topic_counts, document_lengths, topic_word_counts, topic_counts, K, W, alpha=0.1, beta=0.1):
-    return p_word_given_topic(word, topic, topic_word_counts, topic_counts, W, beta) * p_topic_given_document(topic, d, document_topic_counts, document_lengths, K, alpha)
+    """
+    Menghitung bobot topik untuk kata dalam dokumen.
 
-# Fungsi untuk memilih topik baru berdasarkan bobot
+    Parameter:
+    - d (int): Indeks dokumen.
+    - word (str): Kata yang sedang dipertimbangkan.
+    - topic (int): Indeks topik yang sedang dipertimbangkan.
+    - document_topic_counts (list of Counter): Counter jumlah topik per dokumen.
+    - document_lengths (list of int): List panjang setiap dokumen.
+    - topic_word_counts (list of Counter): Counter jumlah kata per topik.
+    - topic_counts (list of int): Jumlah kata per topik.
+    - K (int): Jumlah topik total.
+    - W (int): Jumlah kata unik di semua dokumen.
+    - alpha (float, optional): Parameter alpha untuk smoothing, default 0.1.
+    - beta (float, optional): Parameter beta untuk smoothing, default 0.1.
+
+    Return:
+    - float: Bobot topik untuk kata dalam dokumen.
+    """
+    return p_word_given_topic(word, topic, topic_word_counts, topic_counts, W, beta) * p_topic_given_document(topic, d, document_topic_counts, document_lengths, K, alpha)
 
 
 def choose_new_topic(d, word, K, document_topic_counts, document_lengths, topic_word_counts, topic_counts, W):
+    """
+    Memilih topik baru untuk kata dalam dokumen menggunakan distribusi probabilitas.
+
+    Parameter:
+    - d (int): Indeks dokumen.
+    - word (str): Kata yang sedang dipertimbangkan.
+    - K (int): Jumlah total topik.
+    - document_topic_counts (list of Counter): Counter jumlah topik per dokumen.
+    - document_lengths (list of int): Panjang setiap dokumen.
+    - topic_word_counts (list of Counter): Counter jumlah kata per topik.
+    - topic_counts (list of int): Jumlah kata per topik.
+    - W (int): Jumlah kata unik di semua dokumen.
+
+    Return:
+    - int: Indeks topik baru yang dipilih.
+    """
     weights = []
     for k in range(K):
         weight = topic_weight(d, word, k, document_topic_counts,
@@ -69,48 +129,53 @@ def choose_new_topic(d, word, K, document_topic_counts, document_lengths, topic_
         weights.append(weight)
     return sample_from_weights(weights)
 
-# Fungsi untuk melakukan Gibbs sampling
-
 
 def gibbs_sample(documents, K, max_iteration, document_topic_counts, topic_word_counts, topic_counts, document_lengths, document_topics, W):
-    # print('topik dokumen', document_topics)
+    """
+    Melakukan sampling Gibbs untuk inferensi LDA.
+
+    Parameter:
+    - documents (list of list of str): Dokumen-dokumen yang berisi kata-kata.
+    - K (int): Jumlah total topik.
+    - max_iteration (int): Jumlah iterasi maksimum untuk sampling Gibbs.
+    - document_topic_counts (list of Counter): Counter jumlah topik per dokumen.
+    - topic_word_counts (list of Counter): Counter jumlah kata per topik.
+    - topic_counts (list of int): Jumlah kata per topik.
+    - document_lengths (list of int): Panjang setiap dokumen.
+    - document_topics (list of list of int): Topik saat ini untuk setiap kata di setiap dokumen.
+    - W (int): Jumlah kata unik di semua dokumen.
+
+    Tidak ada nilai yang dikembalikan.
+    """
     D = len(documents)
     for _ in range(max_iteration):
         for d in range(D):
             for i, (word, topic) in enumerate(zip(documents[d], document_topics[d])):
-                # print(word)
-                # print("dokumen, dan topik dokumen",
                 document_topic_counts[d][topic] -= 1
-                # print('dokumen topik count', document_topic_counts[d][topic])
-                # print()
-                # print('topik word count', topic_word_counts[topic][word])
                 topic_word_counts[topic][word] -= 1
-                # print('topik word count', topic_word_counts[topic][word])
-                # print()
                 topic_counts[topic] -= 1
-                # print('topic count', topic_counts[topic])
-                # print()
                 document_lengths[d] -= 1
-                # print('document length', document_lengths[d])
-                # print()
-
-                # Pilih topik baru berdasarkan bobot
                 new_topic = choose_new_topic(
                     d, word, K, document_topic_counts, document_lengths, topic_word_counts, topic_counts, W)
-                # print('topik baru', new_topic)
-                # print('topik kata sebelum pembobotan', document_topics[d][i])
                 document_topics[d][i] = new_topic
-                # print('topik kata sesudah pembobotan', document_topics[d][i])
-
-                # Tambahkan kembali ke jumlah
                 document_topic_counts[d][new_topic] += 1
                 topic_word_counts[new_topic][word] += 1
                 topic_counts[new_topic] += 1
                 document_lengths[d] += 1
-# Fungsi utama untuk menjalankan LDA
 
 
 def run_lda(documents, K, max_iteration):
+    """
+    Menjalankan algoritma Latent Dirichlet Allocation (LDA).
+
+    Parameter:
+    - documents (list of list of str): Dokumen-dokumen yang akan diproses.
+    - K (int): Jumlah topik yang akan dihasilkan.
+    - max_iteration (int): Jumlah iterasi maksimum yang akan dilakukan.
+
+    Return:
+    - tuple: Mengembalikan tuple yang berisi counter kata per topik, counter topik per dokumen, panjang dokumen, jumlah kata per topik, dan jumlah kata unik.
+    """
     random.seed(28347429)
     D = len(documents)
     document_topic_counts = [Counter() for _ in documents]
@@ -133,17 +198,29 @@ def run_lda(documents, K, max_iteration):
             topic_word_counts[topic][word] += 1
             topic_counts[topic] += 1
 
-    # print(topic_counts)
     gibbs_sample(documents, K, max_iteration, document_topic_counts,
                  topic_word_counts, topic_counts, document_lengths, document_topics, W)
 
     return topic_word_counts, document_topic_counts, document_lengths, topic_counts, W
 
 
-# Fungsi untuk mendapatkan daftar kata untuk setiap topik
-
-
 def get_topic_word_list(topic_word_counts, document_topic_counts, document_lengths, topic_counts, K, W, alpha=0.1, beta=0.1):
+    """
+    Mendapatkan list kata per topik dengan bobotnya.
+
+    Parameter:
+    - topic_word_counts (list of Counter): Counter jumlah kata per topik.
+    - document_topic_counts (list of Counter): Counter jumlah topik per dokumen.
+    - document_lengths (list of int): Panjang setiap dokumen.
+    - topic_counts (list of int): Jumlah kata per topik.
+    - K (int): Jumlah topik total.
+    - W (int): Jumlah kata unik di semua dokumen.
+    - alpha (float, optional): Parameter alpha untuk smoothing, default 0.1.
+    - beta (float, optional): Parameter beta untuk smoothing, default 0.1.
+
+    Return:
+    - dict: Dictionary dengan topik sebagai kunci dan list kata dengan bobot sebagai nilai.
+    """
     topic_word_list = {}
     for topic in range(K):
         data = []
@@ -151,11 +228,9 @@ def get_topic_word_list(topic_word_counts, document_topic_counts, document_lengt
             if count > 1:
                 weight = p_word_given_topic(word, topic, topic_word_counts, topic_counts, W, beta) * \
                     (topic_word_counts[topic][word] / topic_counts[topic])
-                # Hanya tambahkan jika bobotnya lebih dari 0.0001
                 if weight > 0.0002:
                     data.append((word, weight))
         topic_word_list[f"Topik {topic+1}"] = data
-        # print(topic_word_list)
     return topic_word_list
 
 
@@ -164,7 +239,6 @@ def main():
 
 
 if __name__ == '__main__':
-    # Data sampel dalam bahasa Indonesia
     data = [
         "Perubahan iklim berdampak pada peningkatan suhu global dan cuaca ekstrem.",
         "Kemajuan dalam kecerdasan buatan mengubah industri dari kesehatan hingga keuangan.",
@@ -178,21 +252,16 @@ if __name__ == '__main__':
         "Industri film beradaptasi dengan layanan streaming, mempengaruhi bioskop tradisional.",
     ]
 
-    # Tokenisasi data
     tokenized_data = tokenize_data(data)
 
-    # Menjalankan LDA
-    K = 2  # Jumlah topik
-    max_iteration = 1000  # Iterasi maksimum
+    K = 2
+    max_iteration = 1000
     topic_word_counts, document_topic_counts, document_lengths, topic_counts, W = run_lda(
         tokenized_data, K, max_iteration)
 
-    # Mendapatkan daftar kata untuk setiap topik
-    # print(topic_word_counts)
     topic_word_list = get_topic_word_list(topic_word_counts, document_topic_counts,
                                           document_lengths, topic_counts, K, W)
 
-    # Menampilkan topik dan kata-kata terkait
     for topic, words in topic_word_list.items():
         formatted_words = [f"{word}: {weight:.4f}" for word, weight in words]
         print(f"{topic}: {', '.join(formatted_words)}")

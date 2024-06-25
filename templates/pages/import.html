@@ -90,21 +90,20 @@
         var t = $('#dataTable').DataTable({
             "ajax": "{{ url_for('pages.core.api_data') }}",
             "columns": [
-                { "data": null }, // Kolom untuk penomoran, tidak memerlukan data khusus
+                { "data": null },
                 { "data": "username" },
                 { "data": "date" },
                 { "data": "rawContent" }
             ],
             "columnDefs": [{
-                "targets": 0, // Kolom pertama adalah untuk penomoran
+                "targets": 0,
                 "searchable": false,
                 "orderable": false,
-                "width": "5%", // Opsional: Menetapkan lebar kolom
-                "className": "dt-center" // Posisi teks di tengah
+                "width": "5%",
+                "className": "dt-center"
             }],
-            "order": [[0, 'asc']], // Mengurutkan tabel berdasarkan kolom kedua (username)
+            "order": [[0, 'asc']],
             "createdRow": function (row, data, dataIndex) {
-                // Kolom penomoran diisi dengan indeks data + 1 (DataIndex adalah index berdasarkan data yang ditampilkan)
                 $('td:eq(0)', row).html(dataIndex + 1);
             }
         });

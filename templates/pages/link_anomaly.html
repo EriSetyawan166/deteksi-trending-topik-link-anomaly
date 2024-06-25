@@ -330,17 +330,6 @@
 
     });
 
-    // document.getElementById("startButton").addEventListener("click", function () {
-    //     var sequence = document.getElementById("sequenceInput").value || 2;
-    //     var xhr = new XMLHttpRequest();
-    //     xhr.open("GET", "/run_link_anomaly?sequence=" + sequence, true);
-    //     xhr.onreadystatechange = function () {
-    //         if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-    //             fetchData('/link_anomaly_result_detail.json');
-    //         }
-    //     };
-    //     xhr.send();
-    // });
 
     document.getElementById("sequenceSelector").addEventListener('change', function () {
         const selectedSequence = this.value;
@@ -561,11 +550,11 @@
         totalPages = Math.ceil(data.sequence_text.length / rowsPerPage);
 
         document.getElementById("sequenceNumber").innerText = data.sequence_number || null;
-        document.getElementById("sequenceTime").innerText = formattedTime;  // Pastikan format waktu sudah benar dan ditangani di fungsi format
+        document.getElementById("sequenceTime").innerText = formattedTime;  
         document.getElementById("sequenceValue").innerText = (data.sequence_value || 0).toFixed(2);
         document.getElementById("sequenceDetails").style.display = "block";
         document.getElementById('sequenceNumberHasilAkhir').innerText = data.sequence_number || null;
-        document.getElementById('sequenceTimeHasilAkhir').innerText = formattedTime; // Asumsi waktu sudah diformat sebelumnya
+        document.getElementById('sequenceTimeHasilAkhir').innerText = formattedTime; 
         document.getElementById('sequenceValueHasilAkhir').innerText = (data.sequence_value || 0).toFixed(2);
         document.getElementById("hasilCard").style.display = "block";
         document.getElementById("detailsAccordion").style.display = "block";

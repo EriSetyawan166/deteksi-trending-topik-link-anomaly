@@ -370,8 +370,6 @@ def link_anomaly(data, sequence=2):
                 hasil_skor_link_anomaly_bersih.append(
                     [hasil_skor_link_anomaly[-1]])
 
-        # print(hasil_skor_link_anomaly_bersih)
-
         # merapihan hasil agregasi skor link anomaly
         for diskrit in hasil_skor_link_anomaly_bersih:
             i = 0

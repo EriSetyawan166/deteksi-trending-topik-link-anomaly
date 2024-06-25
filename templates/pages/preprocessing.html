@@ -47,9 +47,6 @@
                     </div>
                 </div>
             </div>
-            <!-- <div id="progressBarContainer" style="width: 100%; background-color: #ddd;">
-                <div id="progressBar" style="width: 0%; height: 20px; background-color: #4CAF50;"></div>
-            </div> -->
             <div id="dataStats" class="mb-3">
                 <p>Total Data: <span id="totalData">0</span></p>
             </div>
@@ -81,11 +78,11 @@
 <script>
     var socket = io();
     socket.on('progress_cleansing_stemming', function (data) {
-        var progress = Math.round((data.current / data.total) * 100);  // menghitung progress
-        $('#progressBarCleansingStemming').css('width', progress + '%');  // update progress bar
+        var progress = Math.round((data.current / data.total) * 100);  
+        $('#progressBarCleansingStemming').css('width', progress + '%');  
         $('#progressText').html('Cleansing & Stemming Progress: <b style="color: green;">' + progress + '%</b><br>' +
             'Data yang diproses: ' + data.current + ' dari ' + data.total + '<br>' +
-            'ETA: ' + data.eta);  // update teks di modal
+            'ETA: ' + data.eta); 
     });
 
 
@@ -96,17 +93,16 @@
                 "url": "{{ url_for('pages.core.api_data_preprocessing') }}",
                 "type": "GET",
                 "dataSrc": function (json) {
-                    // Update jumlah total data yang diproses
                     $('#totalProcessedData').text(json.total_count);
                     return json.data;
                 }
             },
             "columns": [
-                { "data": null, searchable: false, orderable: false },  // Kolom untuk penomoran otomatis
+                { "data": null, searchable: false, orderable: false }, 
                 {
                     "data": "time",
                     "render": function (data, type, row) {
-                        return moment.utc(data).format('DD-MM-YYYY HH:mm:ss');  // Format waktu
+                        return moment.utc(data).format('DD-MM-YYYY HH:mm:ss');  
                     }
                 },
                 { "data": "user_twitter" },
@@ -115,9 +111,9 @@
                 { "data": "id_user_mentioned" },
             ],
             "columnDefs": [{
-                "targets": 0,  // Target kolom pertama untuk penomoran
+                "targets": 0,
                 "render": function (data, type, full, meta) {
-                    return meta.row + 1 + meta.settings._iDisplayStart;  // Menambahkan penomoran yang dimulai dari 1
+                    return meta.row + 1 + meta.settings._iDisplayStart; 
                 }
             }]
         });
@@ -157,20 +153,20 @@
                                 Swal.showLoading();
                                 Swal.getCancelButton().removeAttribute('disabled')
                                 Swal.getDenyButton().removeAttribute('disabled')
-                                const startTime = new Date(); // Capture start time
+                                const startTime = new Date();
                                 return new Promise((resolve, reject) => {
                                     $.ajax({
                                         url: "{{ url_for('pages.core.run_preprocessing') }}",
                                         type: "POST",
                                         success: function (response) {
-                                            const endTime = new Date(); // Capture end time
-                                            const duration = new Date(endTime - startTime); // Calculate duration
+                                            const endTime = new Date();
+                                            const duration = new Date(endTime - startTime);
                                             const formattedDuration = [
                                                 duration.getUTCHours().toString().padStart(2, '0'),
                                                 duration.getUTCMinutes().toString().padStart(2, '0'),
                                                 duration.getUTCSeconds().toString().padStart(2, '0')
-                                            ].join(':'); // Format duration as hh:mm:ss
-                                            response.duration = formattedDuration; // Add duration to response
+                                            ].join(':'); 
+                                            response.duration = formattedDuration;
                                             resolve(response);
                                         },
                                         error: function (xhr, status, error) {
@@ -203,9 +199,9 @@
                                     confirmButtonText: 'Lihat Hasil',
                                     icon: 'success'
                                 }).then(function () {
-                                    $('#dataTable').DataTable().ajax.reload(); // Reload the table data
-                                    updateStats();  // Update the data stats display
-                                    $('#startPreprocessing').show();  // Show start button again
+                                    $('#dataTable').DataTable().ajax.reload();
+                                    updateStats();
+                                    $('#startPreprocessing').show();
                                 });
                             }
                         });
@@ -235,7 +231,7 @@
                         success: function () {
                             Swal.fire('Terhapus!', 'Data preprocessing telah berhasil dihapus.', 'success');
                             $('#dataTable').DataTable().ajax.reload();
-                            updateStats(); // Update stats after deletion
+                            updateStats();
                         },
                         error: function (response) {
                             Swal.fire('Gagal!', response.responseJSON.error, 'error');

@@ -7,7 +7,6 @@ from ...util import preprocessing
 from ...util import lda
 from ...util import PoolManager
 import os
-# from models import DatasetPreprocessed
 import mysql.connector
 import locale
 from flask import jsonify, send_from_directory
@@ -19,12 +18,26 @@ processing_pool = None
 
 
 def save_to_json(data, filename):
+    """
+    Menyimpan data ke dalam file JSON.
+
+    Parameter:
+    - data (dict/list): Data yang akan disimpan.
+    - filename (str): Nama file yang akan dibuat untuk menyimpan data.
+
+    Tidak ada nilai yang dikembalikan.
+    """
     with open(filename, 'w') as f:
         json.dump(data, f, indent=4, default=str)
 
 
 def create_db_connection():
-    # Your database configuration
+    """
+    Membuat koneksi ke database menggunakan konfigurasi dari aplikasi Flask.
+
+    Return:
+    - Connection: Objek koneksi ke database.
+    """
     db_config = {
         'host': current_app.config['MYSQL_HOST'],
         'user': current_app.config['MYSQL_USER'],
@@ -32,23 +45,39 @@ def create_db_connection():
         'database': current_app.config['MYSQL_DATABASE']
     }
 
-    # Create database connection
     return mysql.connector.connect(**db_config)
 
 
 @core_bp.route("/")
 def home_route():
+    """
+    Route untuk halaman utama aplikasi.
+
+    Return:
+    - Rendered template: Mengembalikan template halaman utama.
+    """
     return render_template("pages/index.html")
 
 
 @core_bp.route("/import")
 def scraping_route():
-    # Render the import template
+    """
+    Route untuk halaman import data.
+
+    Return:
+    - Rendered template: Mengembalikan template halaman import data.
+    """
     return render_template("pages/import.html")
 
 
 @core_bp.route("/api/data")
 def api_data():
+    """
+    API route yang menyediakan data dari dataset Twitter.
+
+    Return:
+    - JSON: Mengembalikan data dalam format JSON.
+    """
     response_data = []
     db = create_db_connection()
     cursor = db.cursor()
@@ -75,6 +104,12 @@ def api_data():
 
 @core_bp.route("api/delete_all_data", methods=['DELETE'])
 def api_delete_all_data():
+    """
+    API route untuk menghapus semua data dari dataset Twitter.
+
+    Return:
+    - JSON: Pesan konfirmasi penghapusan data.
+    """
     db = create_db_connection()
     cursor = db.cursor()
     cursor.execute(
@@ -85,6 +120,12 @@ def api_delete_all_data():
 
 @core_bp.route("api/upload_csv_file", methods=['POST'])
 def api_upload_csv_file():
+    """
+    API route untuk mengunggah dan memproses file CSV ke dalam database.
+
+    Return:
+    - JSON: Mengembalikan pesan keberhasilan atau pesan kesalahan.
+    """
     db = create_db_connection()
     cursor = db.cursor()
     if 'fileInput' not in request.files:
@@ -97,10 +138,8 @@ def api_upload_csv_file():
 
     if file and file.filename.endswith('.csv'):
         try:
-            # Simpan file CSV ke direktori server (misalnya 'uploads/')
             file.save('tweets-data/' + file.filename)
 
-            # Proses file CSV
             with open('tweets-data/' + file.filename, 'r', encoding='utf-8') as csvfile:
                 csvreader = csv.DictReader(csvfile)
                 for row in csvreader:
@@ -109,11 +148,8 @@ def api_upload_csv_file():
                     username = row['username']
                     displayname = row['displayname']
                     description = row['description']
-                    # Convert to int, assuming numeric fields
                     followersCount = int(row['followersCount'])
-                    # Convert to int, assuming numeric fields
                     friendsCount = int(row['friendsCount'])
-                    # Convert to int, assuming numeric fields
                     statusesCount = int(row['statusesCount'])
                     location = row['location']
                     rawContent = row['rawContent']
@@ -137,11 +173,23 @@ def api_upload_csv_file():
 
 @core_bp.route("/preprocessing")
 def preprocessing_route():
+    """
+    Route untuk halaman pra-pemrosesan data.
+
+    Return:
+    - Rendered template: Mengembalikan template halaman pra-pemrosesan.
+    """
     return render_template("pages/preprocessing.html")
 
 
 @core_bp.route("/api/data/preprocessing")
 def api_data_preprocessing():
+    """
+    API route yang menyediakan data yang telah dipra-proses.
+
+    Return:
+    - JSON: Mengembalikan data dalam format JSON, termasuk jumlah total data.
+    """
     db = create_db_connection()
     cursor = db.cursor()
     cursor.execute("SELECT * FROM dataset_preprocessed")
@@ -166,6 +214,12 @@ def api_data_preprocessing():
 
 @core_bp.route("/api/data/stats")
 def api_data_stats():
+    """
+    API route untuk mendapatkan statistik data dalam database.
+
+    Return:
+    - JSON: Mengembalikan jumlah total data dan jumlah data yang telah diproses.
+    """
     db = create_db_connection()
     cursor = db.cursor()
 
@@ -181,6 +235,12 @@ def api_data_stats():
 
 @core_bp.route("/delete_preprocessing_data", methods=['POST'])
 def delete_preprocessing_data():
+    """
+    Menghapus semua data yang telah dipra-proses dari database.
+
+    Return:
+    - JSON: Respon berisi pesan keberhasilan atau kesalahan.
+    """
     db = create_db_connection()
     cursor = db.cursor()
     try:
@@ -197,6 +257,12 @@ def delete_preprocessing_data():
 
 @core_bp.route("/check_preprocessing_data", methods=['GET'])
 def check_preprocessing_data():
+    """
+    Mengecek apakah terdapat data yang telah dipra-proses di database.
+
+    Return:
+    - JSON: Respon berisi status keberadaan data pra-proses.
+    """
     db = create_db_connection()
     cursor = db.cursor()
     try:
@@ -211,6 +277,12 @@ def check_preprocessing_data():
 
 @core_bp.route("/run_preprocessing", methods=['POST'])
 def run_preprocessing():
+    """
+    Melakukan pra-pemrosesan data dan menyimpan hasilnya ke database.
+
+    Return:
+    - JSON: Respon berisi pesan keberhasilan atau kesalahan, dan data yang diproses.
+    """
     db = create_db_connection()
     cursor = db.cursor()
     try:
@@ -239,6 +311,12 @@ def run_preprocessing():
 
 @core_bp.route("/cancel_preprocessing", methods=["POST"])
 def cancel_preprocessing():
+    """
+    Membatalkan operasi pra-pemrosesan yang sedang berlangsung.
+
+    Return:
+    - JSON: Respon berisi pesan keberhasilan pembatalan atau kesalahan.
+    """
     if PoolManager.get_pool() is not None:
         PoolManager.terminate_pool()
         return jsonify({"message": "Preprocessing cancelled successfully"}), 200
@@ -248,18 +326,38 @@ def cancel_preprocessing():
 
 @core_bp.route("/link_anomaly")
 def link_anomaly_route():
+    """
+    Menampilkan halaman untuk analisis anomali link.
+
+    Return:
+    - Rendered template: Mengembalikan template halaman analisis anomali link.
+    """
     return render_template("pages/link_anomaly.html")
 
 
 @core_bp.route('/link_anomaly_result_detail.json')
 def serve_json_link_anomaly_result_detail():
-    # Path to the file in the root directory (or specify another path if not in root)
-    directory = os.getcwd()  # This gets the current working directory
+    """
+    Menyajikan file JSON yang berisi detail hasil analisis anomali link.
+
+    Return:
+    - JSON file: Kirim file JSON yang berisi hasil detail dari analisis anomali link.
+    """
+    directory = os.getcwd()
     return send_from_directory(directory, 'link_anomaly_result_detail.json')
 
 
 @core_bp.route("/run_link_anomaly")
 def run_link_anomaly():
+    """
+    Melakukan analisis anomaly pada data link berdasarkan urutan waktu tertentu.
+
+    Parameter:
+    - sequence (int): Jumlah urutan data yang akan dianalisis.
+
+    Return:
+    - JSON: Respon berisi hasil analisis dengan detail seperti skor anomaly, probabilitas, dan lain-lain.
+    """
     locale.setlocale(locale.LC_TIME, 'id_ID')
     db = create_db_connection()
 
@@ -285,7 +383,6 @@ def run_link_anomaly():
     }
 
     if sequence >= len(data):
-        # Kembali dengan data default jika sequence tidak memadai
         return jsonify(default_response)
 
     hasil = link_anomaly(data, sequence)
@@ -341,11 +438,23 @@ def run_link_anomaly():
 
 @core_bp.route("/modelling")
 def modelling_route():
+    """
+    Menampilkan halaman untuk pemodelan.
+
+    Return:
+    - Rendered template: Mengembalikan template halaman pemodelan.
+    """
     return render_template("pages/modelling.html")
 
 
 @core_bp.route("/api/data/hasil_link_anomaly")
 def hasil_link_anomaly():
+    """
+    Mengembalikan hasil analisis link anomaly yang tersimpan dalam format JSON.
+
+    Return:
+    - JSON: Respon berisi data hasil analisis atau pesan kesalahan.
+    """
     try:
         with open('link_anomaly_result.json', 'r') as file:
             data = json.load(file)
@@ -361,25 +470,25 @@ def hasil_link_anomaly():
 
 @core_bp.route('/run_lda', methods=['GET'])
 def run_lda():
+    """
+    Melakukan pemodelan Latent Dirichlet Allocation (LDA) berdasarkan teks yang dianalisis sebelumnya.
+
+    Return:
+    - JSON: Respon berisi daftar topik yang dihasilkan atau pesan kesalahan.
+    """
     try:
-        print("jalan")
-        # Membaca data dari file JSON
         with open('link_anomaly_result.json', 'r') as file:
             data = json.load(file)
             sequence_texts = data.get('sequence_text', [])
 
-        if not sequence_texts:  # Jika sequence_text kosong
+        if not sequence_texts:
             return jsonify({"error": "LDA gagal dilakukan karena belum ada hasil link anomaly"}), 400
-        # print(sequence_texts)
-        # Tokenisasi data
         tokenized_data = lda.tokenize_data(sequence_texts)
 
-        # Menjalankan LDA
-        K = 10  # Jumlah topik
-        max_iteration = 2000  # Iterasi maksimum
+        K = 10
+        max_iteration = 2000
         topic_word_counts, document_topic_counts, document_lengths, topic_counts, W = lda.run_lda(
             tokenized_data, K, max_iteration)
-        # Mendapatkan daftar kata untuk setiap topik
         topic_word_list = lda.get_topic_word_list(topic_word_counts, document_topic_counts,
                                                   document_lengths, topic_counts, K, W)
         save_to_json({
@@ -398,79 +507,14 @@ def run_lda():
         return jsonify({"error": str(e)}), 500
 
 
-@core_bp.route("/pengujian")
-def pengujian_route():
-    return render_template("pages/pengujian.html")
-
-
-@core_bp.route("api/pengujian/upload_csv_file", methods=['POST'])
-def api_pengujian_upload_csv_file():
-    db = create_db_connection()
-    cursor = db.cursor()
-    if 'fileInput' not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-
-    file = request.files['fileInput']
-
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-
-    if file and file.filename.endswith('.csv'):
-        try:
-            # Simpan file CSV ke direktori server (misalnya 'uploads/')
-            file.save('tweets-data/' + file.filename)
-
-            # Proses file CSV
-            with open('tweets-data/' + file.filename, 'r', encoding='utf-8') as csvfile:
-                csvreader = csv.DictReader(csvfile)
-                for row in csvreader:
-                    ground_truth_topic = row['Ground Truth Topic']
-                    ground_truth_keyword = row['Ground Truth Keyword']
-                    sql = """INSERT INTO ground_data_truth (ground_truth_topic, ground_truth_keyword) 
-                            VALUES (%s, %s)"""
-                    values = (ground_truth_topic, ground_truth_keyword)
-
-                    cursor.execute(sql, values)
-                    db.commit()
-
-            return jsonify({"message": "CSV file uploaded and processed successfully"}), 200
-        except Exception as e:
-            return jsonify({"error": "Failed to process CSV file: " + str(e)}), 500
-    else:
-        return jsonify({"error": "Invalid file format, please upload a CSV file"}), 400
-
-
-@core_bp.route("api/pengujian/delete_all_data", methods=['DELETE'])
-def api_pengujian_delete_all_data():
-    db = create_db_connection()
-    cursor = db.cursor()
-    cursor.execute(
-        "DELETE FROM ground_data_truth")
-    db.commit()
-    return jsonify({"message": "All data deleted successfully"})
-
-
-@core_bp.route("/api/data/pengujian")
-def api_data_pengujian():
-    db = create_db_connection()
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM ground_data_truth")
-    data = cursor.fetchall()
-
-    response_data = []
-    for row in data:
-        row_data = {
-            "id": row[0],
-            "ground_truth_topic": row[1],
-            "ground_truth_keyword": row[2],
-        }
-        response_data.append(row_data)
-
-    return jsonify({"data": response_data})
-
-
 @core_bp.route("/api/data/hasil_lda")
 def hasil_lda():
+    """
+    Menyajikan hasil pemodelan LDA yang telah disimpan dalam format JSON.
+
+    Return:
+    - JSON: Mengembalikan data hasil LDA atau pesan kesalahan jika file tidak ditemukan atau terjadi kesalahan decoding.
+    """
     try:
         with open('topic_word_list.json', 'r') as file:
             data = json.load(file)
@@ -486,6 +530,11 @@ def hasil_lda():
 
 @core_bp.route('/topic_word_list.json')
 def serve_json():
-    # Path to the file in the root directory (or specify another path if not in root)
-    directory = os.getcwd()  # This gets the current working directory
+    """
+    Menyediakan akses langsung ke file JSON yang berisi daftar kata per topik hasil pemodelan LDA.
+
+    Return:
+    - File: Mengirim file JSON 'topic_word_list.json' dari direktori kerja saat ini.
+    """
+    directory = os.getcwd()
     return send_from_directory(directory, 'topic_word_list.json')

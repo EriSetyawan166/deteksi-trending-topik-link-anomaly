@@ -1,6 +1,16 @@
 import mysql.connector
 
+
 def insert_slangwords(connection, file_path):
+    """
+    Fungsi untuk memasukkan kata slang ke dalam basis data dari file teks.
+
+    Parameter:
+    - connection (Connection): Objek koneksi ke database.
+    - file_path (str): Jalur ke file teks yang berisi pasangan kata tidak baku dan kata baku.
+
+    Tidak ada nilai yang dikembalikan, tetapi akan mencetak status atau kesalahan ke konsol.
+    """
     try:
         cursor = connection.cursor()
 
@@ -21,11 +31,20 @@ def insert_slangwords(connection, file_path):
         print(f"Error inserting data: {e}")
         connection.rollback()
 
+
 def close_connection(connection):
+    """
+    Fungsi untuk menutup koneksi ke basis data.
+
+    Parameter:
+    - connection (Connection): Objek koneksi ke database yang akan ditutup.
+
+    Tidak ada nilai yang dikembalikan, tetapi akan mencetak status ke konsol.
+    """
     connection.close()
     print("Koneksi ditutup.")
 
-# Connect to the database
+
 connection = mysql.connector.connect(
     host="localhost",
     user="root",
@@ -33,11 +52,8 @@ connection = mysql.connector.connect(
     database="deteksi_trending_topik"
 )
 
-# File path to the slangword.txt file
 file_path = "../../kamus/slangword.txt"
 
-# Call the function to insert slangwords
 insert_slangwords(connection, file_path)
 
-# Close the database connection
 close_connection(connection)

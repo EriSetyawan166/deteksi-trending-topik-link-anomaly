@@ -36,7 +36,7 @@ factory = StemmerFactory()
 stemmer = factory.create_stemmer()
 
 
-@lru_cache(maxsize=10000) 
+@lru_cache(maxsize=10000)
 def cached_stem(word):
     return stemmer.stem(word)
 
@@ -195,20 +195,42 @@ def remove_non_alphabet(tweet):
         str: Teks tweet hanya mengandung karakter a-z.
     """
 
-    # Mengganti karakter selain a-z dengan string kosong
     tweet_clean = re.sub(non_alphabet_pattern, '', tweet)
 
     return tweet_clean
 
 
 def stem_text(text):
+    """
+    Melakukan stemming pada teks yang diberikan.
 
+    Parameter:
+    - text (str): Teks yang akan di-stem.
+
+    Return:
+    - str: Teks hasil stemming.
+    """
     words = text.split()
     stemmed_words = [cached_stem(word) for word in words]
     return ' '.join(stemmed_words)
 
 
 def worker(data_chunk, slangwords, progress_queue, start_time, total_data):
+    """
+    Fungsi worker yang memproses chunk data untuk pra-pemrosesan teks.
+
+    Parameter:
+    - data_chunk (list): List dari data yang akan diproses.
+    - slangwords (dict): Dictionary kata slang dan penggantinya.
+    - progress_queue (queue): Queue untuk melacak kemajuan pemrosesan.
+    - start_time (datetime): Waktu mulai pemrosesan.
+    - total_data (int): Jumlah total data yang akan diproses.
+
+    Return:
+    - tuple: Tuple dari processed_chunk dan additional_data_chunk.
+             processed_chunk berisi data yang telah diproses,
+             additional_data_chunk berisi data tambahan yang dihasilkan selama pemrosesan.
+    """
     processed_chunk = []
     additional_data_chunk = []
 
@@ -257,6 +279,15 @@ def remove_extra_spaces(tweet):
 
 
 def preprocess(datas):
+    """
+    Fungsi untuk pra-pemrosesan kumpulan data secara paralel menggunakan multiprocessing.
+
+    Parameter:
+    - datas (list): List data yang akan diproses.
+
+    Return:
+    - list: List data yang telah diproses.
+    """
     slangword = ambil_kamus_slangword()
     num_workers = multiprocessing.cpu_count()
     pool = PoolManager.create_pool()
@@ -287,13 +318,11 @@ def preprocess(datas):
             total_progress += 1
             pbar.update(1)
 
-            # Calculate ETA
             elapsed_time = time.time() - start_time
             eta_seconds = elapsed_time / total_progress * \
                 (total_data - total_progress) if total_progress > 0 else 0
             eta = time.strftime("%H:%M:%S", time.gmtime(eta_seconds))
 
-            # Emit progress to the client
             socketio.emit('progress_cleansing_stemming', {
                 'current': total_progress,
                 'total': total_data,
@@ -324,7 +353,6 @@ if __name__ == "__main__":
 
 def main():
     directory = 'tweets-data/'
-    # preprocess_csv(directory)
     data = ambil_data_kotor()
     preprocessing = preprocess(data)
 
