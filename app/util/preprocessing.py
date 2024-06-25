@@ -14,6 +14,7 @@ from tqdm import tqdm
 from flask_socketio import emit
 from app import socketio
 import time
+import traceback
 
 
 load_dotenv()
@@ -35,12 +36,12 @@ factory = StemmerFactory()
 stemmer = factory.create_stemmer()
 
 
-@lru_cache(maxsize=10000)  # Cache up to 10,000 unique words
+@lru_cache(maxsize=10000) 
 def cached_stem(word):
     return stemmer.stem(word)
 
 
-def adjust_timestamp(time_str):
+def adjust_timestamp(time_input):
     """
     Mengubah format waktu dari string ke string format lain.
 
@@ -50,10 +51,15 @@ def adjust_timestamp(time_str):
     Returns:
         str: Waktu dengan format baru sebagai string.
     """
-    # Parse the string to datetime object
-    # original_format = '%a %b %d %H:%M:%S %z %Y'
-    original_format = '%Y-%m-%d %H:%M:%S%z'
-    dt = datetime.datetime.strptime(time_str, original_format)
+    if isinstance(time_input, datetime.datetime):
+        dt = time_input
+    else:
+        original_format = '%Y-%m-%d %H:%M:%S%z'
+        try:
+            dt = datetime.datetime.strptime(time_input, original_format)
+        except ValueError as e:
+            logging.error(f"Error parsing datetime from string: {e}")
+            raise
 
     # Tambahkan 7 jam
     adjusted_dt = dt + datetime.timedelta(hours=7)
@@ -121,7 +127,9 @@ def remove_stopwords(tweet):
     """
     factory = StopWordRemoverFactory()
     stopword_remover = factory.create_stop_word_remover()
-    tweet_clean = stopword_remover.remove(tweet)
+    words = tweet.split()
+    cleaned_words = [stopword_remover.remove(word) for word in words]
+    tweet_clean = ' '.join(cleaned_words)
     return tweet_clean
 
 
@@ -205,24 +213,29 @@ def worker(data_chunk, slangwords, progress_queue, start_time, total_data):
     additional_data_chunk = []
 
     for data in tqdm(data_chunk, desc="Processing", position=0):
-        if '@' in data[3]:
-            jumlah_mention = data[3].count('@')
-            id_user_mentioned = re.findall(r'(@\w+)', data[3])
-            time_change = adjust_timestamp(data[1])
-            text = data[3].lower()
-            text = remove_urls(text)
-            text = remove_mentions(text)
-            text = remove_hashtags(text)
-            text = remove_non_alphabet(text)
-            text = remove_extra_spaces(text)
-            text = replace_slangwords(text, slangwords)
-            text = remove_stopwords(text)
-            text = stem_text(text)
-            additional_data_chunk.append(
-                (data[0], time_change, data[2], jumlah_mention, ','.join(id_user_mentioned)))
-            processed_chunk.append(
-                (data[0], time_change, data[2], text, jumlah_mention, ','.join(id_user_mentioned)))
-        progress_queue.put(1)  # Send progress update
+        try:
+            if '@' in data[3]:
+                jumlah_mention = data[3].count('@')
+                id_user_mentioned = re.findall(r'(@\w+)', data[3])
+                time_change = adjust_timestamp(data[1])
+                text = data[3].lower()
+                text = remove_urls(text)
+                text = remove_mentions(text)
+                text = remove_hashtags(text)
+                text = remove_non_alphabet(text)
+                text = remove_extra_spaces(text)
+                text = replace_slangwords(text, slangwords)
+                text = remove_stopwords(text)
+                text = stem_text(text)
+                additional_data_chunk.append(
+                    (data[0], time_change, data[2], jumlah_mention, ','.join(id_user_mentioned)))
+                processed_chunk.append(
+                    (data[0], time_change, data[2], text, jumlah_mention, ','.join(id_user_mentioned)))
+        except Exception as e:
+            logging.error(f"Error processing data with ID {data[0]}: {e}")
+            logging.error(traceback.format_exc())
+        finally:
+            progress_queue.put(1)
 
     return processed_chunk, additional_data_chunk
 

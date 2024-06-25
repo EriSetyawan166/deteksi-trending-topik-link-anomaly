@@ -9,15 +9,13 @@ import string
 
 def tokenize_data(data):
     # Set stop words dalam bahasa Indonesia
-    stop_words = set(stopwords.words('indonesian'))
     tokens_list = []
 
     for text in data:
         # Tokenisasi dan konversi ke huruf kecil
         tokens = word_tokenize(text.lower())
         # Hapus punctuation dan stop words
-        tokens = [word for word in tokens if word.isalnum()
-                  and word not in stop_words]
+        tokens = [word for word in tokens if word.isalnum()]
         tokens_list.append(tokens)
 
     return tokens_list
@@ -82,8 +80,6 @@ def gibbs_sample(documents, K, max_iteration, document_topic_counts, topic_word_
             for i, (word, topic) in enumerate(zip(documents[d], document_topics[d])):
                 # print(word)
                 # print("dokumen, dan topik dokumen",
-                #       documents[d], document_topics[d])
-                # print()
                 document_topic_counts[d][topic] -= 1
                 # print('dokumen topik count', document_topic_counts[d][topic])
                 # print()
@@ -115,6 +111,7 @@ def gibbs_sample(documents, K, max_iteration, document_topic_counts, topic_word_
 
 
 def run_lda(documents, K, max_iteration):
+    random.seed(28347429)
     D = len(documents)
     document_topic_counts = [Counter() for _ in documents]
     topic_word_counts = [Counter() for _ in range(K)]
@@ -136,10 +133,6 @@ def run_lda(documents, K, max_iteration):
             topic_word_counts[topic][word] += 1
             topic_counts[topic] += 1
 
-    # print(document_topic_counts)
-    # print()
-    # print(topic_word_counts)
-    # print()
     # print(topic_counts)
     gibbs_sample(documents, K, max_iteration, document_topic_counts,
                  topic_word_counts, topic_counts, document_lengths, document_topics, W)
@@ -158,9 +151,9 @@ def get_topic_word_list(topic_word_counts, document_topic_counts, document_lengt
             if count > 1:
                 weight = p_word_given_topic(word, topic, topic_word_counts, topic_counts, W, beta) * \
                     (topic_word_counts[topic][word] / topic_counts[topic])
-                data.append((word, weight))
-        if len(data) > 15:
-            data = data[:15]
+                # Hanya tambahkan jika bobotnya lebih dari 0.0001
+                if weight > 0.0002:
+                    data.append((word, weight))
         topic_word_list[f"Topik {topic+1}"] = data
         # print(topic_word_list)
     return topic_word_list

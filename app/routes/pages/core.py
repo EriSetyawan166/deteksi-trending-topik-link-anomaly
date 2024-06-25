@@ -215,7 +215,7 @@ def run_preprocessing():
     cursor = db.cursor()
     try:
         cursor.execute(
-            "SELECT id, created_at, username, full_text FROM dataset_twitter")
+            "SELECT id, date, username, rawContent FROM dataset_twitter")
         data = cursor.fetchall()
 
         processed_data = preprocessing.preprocess(data)
@@ -375,14 +375,13 @@ def run_lda():
         tokenized_data = lda.tokenize_data(sequence_texts)
 
         # Menjalankan LDA
-        K = 5  # Jumlah topik
-        max_iteration = 1000  # Iterasi maksimum
+        K = 10  # Jumlah topik
+        max_iteration = 2000  # Iterasi maksimum
         topic_word_counts, document_topic_counts, document_lengths, topic_counts, W = lda.run_lda(
             tokenized_data, K, max_iteration)
         # Mendapatkan daftar kata untuk setiap topik
         topic_word_list = lda.get_topic_word_list(topic_word_counts, document_topic_counts,
                                                   document_lengths, topic_counts, K, W)
-        print(topic_word_list)
         save_to_json({
             "topic_word_list": topic_word_list,
         }, 'topic_word_list.json')

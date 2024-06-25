@@ -38,7 +38,7 @@ def ambil_data_kotor():
     connection = db_manager.get_connection()
     cursor = connection.cursor()
     cursor.execute(
-        "SELECT id, created_at, username, full_text FROM dataset_twitter")
+        "SELECT id, date, username, rawContent FROM dataset_twitter")
     result = cursor.fetchall()
     cursor.close()
     connection.close()

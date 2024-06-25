@@ -98,7 +98,7 @@ def hitung_skor_link_anomaly(hasil_probabilitas_mention, hasil_probabilitas_ment
         float: skor link anomaly tweet.
     """
     hasil = -math.log(hasil_probabilitas_mention, 10) - \
-        math.log(hasil_probabilitas_mention_user, 10)
+        hasil_probabilitas_mention_user
 
     return hasil
 
@@ -177,7 +177,7 @@ def hitung_cost_function(cleaned_agregasi_skor_link_anomaly, p=0.3, alpha_burst=
         if score_time_list is None:
             continue
 
-        transisi_state = len(score_time_list) - 1
+        transisi_state = len(score_time_list)
         if transisi_state < 1:
             # Jika transisi_state kurang dari 1, lewati proses ini
             continue
@@ -290,7 +290,9 @@ def link_anomaly(data, sequence=2):
         if index not in seleksi_agregasi_skor_link_anomaly_keseluruhan:
             seleksi_agregasi_skor_link_anomaly_keseluruhan[index] = []
 
-        probabilitas_mention_user = 0
+        probabilitas_mention_user = 1
+        probabilitas_mention_user_log = 0
+        probabilitas_mention_user_temp = 1
         hasil_skor_link_anomaly_bersih = []
         waktu_sebelum = sequence[0][1]
         hasil_skor_link_anomaly = []
@@ -316,16 +318,20 @@ def link_anomaly(data, sequence=2):
 
             # menghitung probabilitas mention user
             for mention in total_mention_user:
-                probabilitas_mention_user += hitung_probabilitas_mention_user(
+                probabilitas_mention_user_temp = hitung_probabilitas_mention_user(
                     total_mention_user[mention], total_mention)
+                probabilitas_mention_user *= probabilitas_mention_user_temp
+                probabilitas_mention_user_log += math.log(
+                    probabilitas_mention_user_temp, 10)
 
             probabilitas_mention_user_keseluruhan[index].append(
                 (data[3], data[5], probabilitas_mention_user))
 
             # menghitung skor link anomaly
             skor_link_anomaly = hitung_skor_link_anomaly(
-                probabilitas_mention, probabilitas_mention_user)
-            probabilitas_mention_user = 0
+                probabilitas_mention, probabilitas_mention_user_log)
+            probabilitas_mention_user = 1
+            probabilitas_mention_user_log = 0
 
             hasil_skor_link_anomaly.append(skor_link_anomaly)
 
@@ -368,6 +374,7 @@ def link_anomaly(data, sequence=2):
 
         # merapihan hasil agregasi skor link anomaly
         for diskrit in hasil_skor_link_anomaly_bersih:
+            i = 0
             ambil_skor_link_anomaly = diskrit[:-1]
             tau = diskrit[-1]
             hasil_agregasi_skor_anomaly = hitung_agregasi_skor_link_anomaly(

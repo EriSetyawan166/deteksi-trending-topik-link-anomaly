@@ -102,16 +102,25 @@
             var topicWordList = data.topic_word_list;
 
             // Now iterate over the topics in the corrected topicWordList object
-            Object.keys(topicWordList).forEach(function (topic) {
+            Object.keys(topicWordList).forEach(function (topic, index) {
+                // Ensure each topic's word list is sorted by weight in descending order
+                var sortedWords = topicWordList[topic].sort(function (a, b) {
+                    return b[1] - a[1]; // Sort by the second element (weight) in descending order
+                });
+
+                // Create topic title from the top two words
+                var newTopicTitle = sortedWords[0][0] + ' ' + sortedWords[1][0] + ' ' + sortedWords[2][0]; // Concatenates the two highest weighted words
+
                 // Map each word and its weight to the format "word = weight"
-                var formattedWords = topicWordList[topic].map(function (item) {
+                var formattedWords = sortedWords.map(function (item) {
                     return item[0] + " = " + item[1].toFixed(6); // Format the number to six decimal places
                 }).join(", "); // Join the formatted strings with comma
 
-                var $topic = $('<div>').append($('<h5>').text(topic), $('<p>').text(formattedWords));
+                var $topic = $('<div>').append($('<h5>').text('Topik ' + newTopicTitle), $('<p>').text(formattedWords));
                 $cardBody.append($topic);
             });
         }
+
 
         // Initialize DataTable for displaying link anomaly data
         var table = $('#dataTable').DataTable({
