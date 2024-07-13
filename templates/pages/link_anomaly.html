@@ -17,13 +17,13 @@
             <h6 class="m-0 font-weight-bold text-primary">Hasil</h6>
         </div>
         <div class="card-body">
-            <div id="sequenceDetails" style="display: none;" class="mb-4">
+            <div id="sequenceDetails" style="display: none; color: black;" class="mb-4">
                 <h4>Sequence yang terpilih (sequence ke-<span id="sequenceNumber"></span>)</h4>
                 <h4>Pada waktu <span id="sequenceTime"></h4>
                 <h4>Nilai bobot sequence adalah <span id="sequenceValue"></span></h4>
             </div>
             <div style="overflow-y: auto; max-height: 400px;">
-                <table id="textsTable" class="table">
+                <table id="textsTable" class="table" style="color: black;">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -65,7 +65,7 @@
                                 <!-- Options will be populated dynamically by JavaScript -->
                             </select>
                             <div style="max-height: 400px; overflow-y: auto;">
-                                <table class="table">
+                                <table class="table" style="color: black;">
                                     <thead>
                                         <tr>
                                             <th>#</th>
@@ -94,7 +94,7 @@
                                 <!-- Options will be populated dynamically by JavaScript -->
                             </select>
                             <div style="max-height: 400px; overflow-y: auto;">
-                                <table class="table" style="table-layout: fixed;">
+                                <table class="table" style="table-layout: fixed; color: black;">
                                     <thead>
                                         <tr>
                                             <th style="width: 5%;">#</th>
@@ -123,7 +123,7 @@
                                 <!-- Options will be populated dynamically by JavaScript -->
                             </select>
                             <div style="max-height: 400px; overflow-y: auto;">
-                                <table class="table">
+                                <table class="table" style="color: black;">
                                     <thead>
                                         <tr>
                                             <th>#</th>
@@ -151,7 +151,7 @@
                                 <!-- Options will be populated dynamically by JavaScript -->
                             </select>
                             <div style="max-height: 400px; overflow-y: auto;">
-                                <table class="table" style="table-layout: fixed;">
+                                <table class="table" style="table-layout: fixed; color: black;">
                                     <thead>
                                         <tr>
                                             <th style="width: 15%;">diskrit time ke-n</th>
@@ -180,7 +180,7 @@
                                 <!-- Options will be populated dynamically by JavaScript -->
                             </select>
                             <div style="max-height: 400px; overflow-y: auto;">
-                                <table class="table" style="table-layout: fixed;">
+                                <table class="table" style="table-layout: fixed; color: black;">
                                     <thead>
                                         <tr>
                                             <th style="width: 15%;">diskrit time ke-n</th>
@@ -203,7 +203,7 @@
                             <h4>Rumus</h4>
                             <img src="img/rumus_menghitung_cost_function.png" alt="">
                             <div style="max-height: 400px; overflow-y: auto;">
-                                <table class="table" id="costFunctionTable">
+                                <table class="table" id="costFunctionTable" style="color: black;">
                                     <thead>
                                         <tr>
                                             <th style="width: 15%;">Sequence</th>
@@ -222,13 +222,13 @@
                         <div class=" card-header py-3">
                             <h6 class="m-0 font-weight-bold text-primary">Hasil Akhir</h6>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" style="color: black;">
                             <p>Sequence yang memiliki nilai minimum terindikasi berisi trending topic</p>
                             <h4>Sequence yang terpilih (sequence ke-<span id="sequenceNumberHasilAkhir"></span>)</h4>
                             <h4>Pada waktu <span id="sequenceTimeHasilAkhir"></h4>
                             <h4>Nilai bobot sequence adalah <span id="sequenceValueHasilAkhir"></span></h4>
                             <div style="max-height: 400px; overflow-y: auto;">
-                                <table class="table" id="hasilAkhirTable">
+                                <table class="table" id="hasilAkhirTable" style="color: black;">
                                     <thead>
                                         <tr>
                                             <th>#</th>
@@ -550,11 +550,11 @@
         totalPages = Math.ceil(data.sequence_text.length / rowsPerPage);
 
         document.getElementById("sequenceNumber").innerText = data.sequence_number || null;
-        document.getElementById("sequenceTime").innerText = formattedTime;  
+        document.getElementById("sequenceTime").innerText = formattedTime;
         document.getElementById("sequenceValue").innerText = (data.sequence_value || 0).toFixed(2);
         document.getElementById("sequenceDetails").style.display = "block";
         document.getElementById('sequenceNumberHasilAkhir').innerText = data.sequence_number || null;
-        document.getElementById('sequenceTimeHasilAkhir').innerText = formattedTime; 
+        document.getElementById('sequenceTimeHasilAkhir').innerText = formattedTime;
         document.getElementById('sequenceValueHasilAkhir').innerText = (data.sequence_value || 0).toFixed(2);
         document.getElementById("hasilCard").style.display = "block";
         document.getElementById("detailsAccordion").style.display = "block";

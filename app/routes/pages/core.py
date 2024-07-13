@@ -148,9 +148,12 @@ def api_upload_csv_file():
                     username = row['username']
                     displayname = row['displayname']
                     description = row['description']
-                    followersCount = int(row['followersCount'])
-                    friendsCount = int(row['friendsCount'])
-                    statusesCount = int(row['statusesCount'])
+                    followersCount = row.get('followersCount') if row.get(
+                        'followersCount').isdigit() else None
+                    friendsCount = row.get('friendsCount') if row.get(
+                        'friendsCount').isdigit() else None
+                    statusesCount = row.get('statusesCount') if row.get(
+                        'statusesCount').isdigit() else None
                     location = row['location']
                     rawContent = row['rawContent']
 

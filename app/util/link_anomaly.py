@@ -390,7 +390,7 @@ def link_anomaly(data, sequence=2):
 
     for sequence_id, scores in agregasi_skor_anomaly_per_sequence:
         score_above_0_9 = [(index, score) for index, (score, _) in enumerate(
-            scores, start=1) if score > 0.9]
+            scores, start=1) if score > 0.9995]
 
         seleksi_agregasi_skor_link_anomaly_keseluruhan[sequence_id - 1].append(
             (score_above_0_9)

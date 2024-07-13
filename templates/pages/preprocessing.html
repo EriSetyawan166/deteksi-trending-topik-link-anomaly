@@ -51,7 +51,7 @@
                 <p>Total Data: <span id="totalData">0</span></p>
             </div>
             <div>
-                <table class="table table-hover" id="dataTable" style="table-layout: fixed;">
+                <table class="table table-hover" id="dataTable" style="table-layout: fixed; color: black;">
                     <thead>
                         <tr>
                             <th style="width: 7%;">id</th>
@@ -78,11 +78,11 @@
 <script>
     var socket = io();
     socket.on('progress_cleansing_stemming', function (data) {
-        var progress = Math.round((data.current / data.total) * 100);  
-        $('#progressBarCleansingStemming').css('width', progress + '%');  
+        var progress = Math.round((data.current / data.total) * 100);
+        $('#progressBarCleansingStemming').css('width', progress + '%');
         $('#progressText').html('Cleansing & Stemming Progress: <b style="color: green;">' + progress + '%</b><br>' +
             'Data yang diproses: ' + data.current + ' dari ' + data.total + '<br>' +
-            'ETA: ' + data.eta); 
+            'ETA: ' + data.eta);
     });
 
 
@@ -98,11 +98,11 @@
                 }
             },
             "columns": [
-                { "data": null, searchable: false, orderable: false }, 
+                { "data": null, searchable: false, orderable: false },
                 {
                     "data": "time",
                     "render": function (data, type, row) {
-                        return moment.utc(data).format('DD-MM-YYYY HH:mm:ss');  
+                        return moment.utc(data).format('DD-MM-YYYY HH:mm:ss');
                     }
                 },
                 { "data": "user_twitter" },
@@ -113,7 +113,7 @@
             "columnDefs": [{
                 "targets": 0,
                 "render": function (data, type, full, meta) {
-                    return meta.row + 1 + meta.settings._iDisplayStart; 
+                    return meta.row + 1 + meta.settings._iDisplayStart;
                 }
             }]
         });
@@ -165,7 +165,7 @@
                                                 duration.getUTCHours().toString().padStart(2, '0'),
                                                 duration.getUTCMinutes().toString().padStart(2, '0'),
                                                 duration.getUTCSeconds().toString().padStart(2, '0')
-                                            ].join(':'); 
+                                            ].join(':');
                                             response.duration = formattedDuration;
                                             resolve(response);
                                         },

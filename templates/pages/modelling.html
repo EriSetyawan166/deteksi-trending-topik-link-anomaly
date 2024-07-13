@@ -9,7 +9,7 @@
         <button id="startButton" class="btn btn-primary">Mulai</button>
     </div>
     <div class="card shadow mb-4" id="hasilModelling" style="display: none;">
-        <div class="card-body">
+        <div class="card-body" style="color: black;">
 
         </div>
     </div>
@@ -18,7 +18,7 @@
             <div id="sequenceDetails" class="mb-4">
                 <h4>Tweet yang akan dimodel <span id="sequenceTime"></span></h4>
             </div>
-            <table id="dataTable" class="table">
+            <table id="dataTable" class="table" style="color: black;">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -104,7 +104,11 @@
                     return b[1] - a[1];
                 });
 
-                var newTopicTitle = sortedWords[0][0] + ' ' + sortedWords[1][0] + ' ' + sortedWords[2][0]; // Concatenates the two highest weighted words
+                var topWords = sortedWords.slice(0, Math.min(sortedWords.length, 3)).map(function (word) {
+                    return word[0];
+                });
+
+                var newTopicTitle = topWords.join(' ');
 
                 var formattedWords = sortedWords.map(function (item) {
                     return item[0] + " = " + item[1].toFixed(6);
