@@ -290,7 +290,7 @@ def link_anomaly(data, sequence=2):
         if index not in seleksi_agregasi_skor_link_anomaly_keseluruhan:
             seleksi_agregasi_skor_link_anomaly_keseluruhan[index] = []
 
-        probabilitas_mention_user = 1
+        probabilitas_mention_user = []
         probabilitas_mention_user_log = 0
         probabilitas_mention_user_temp = 1
         hasil_skor_link_anomaly_bersih = []
@@ -320,7 +320,8 @@ def link_anomaly(data, sequence=2):
             for mention in total_mention_user:
                 probabilitas_mention_user_temp = hitung_probabilitas_mention_user(
                     total_mention_user[mention], total_mention)
-                probabilitas_mention_user *= probabilitas_mention_user_temp
+                probabilitas_mention_user.append(
+                    probabilitas_mention_user_temp)
                 probabilitas_mention_user_log += math.log(
                     probabilitas_mention_user_temp, 10)
 
@@ -330,7 +331,7 @@ def link_anomaly(data, sequence=2):
             # menghitung skor link anomaly
             skor_link_anomaly = hitung_skor_link_anomaly(
                 probabilitas_mention, probabilitas_mention_user_log)
-            probabilitas_mention_user = 1
+            probabilitas_mention_user = []
             probabilitas_mention_user_log = 0
 
             hasil_skor_link_anomaly.append(skor_link_anomaly)

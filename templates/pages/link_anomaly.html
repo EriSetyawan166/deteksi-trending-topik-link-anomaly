@@ -53,6 +53,7 @@
                     </div>
                     <div class="card shadow mb-4">
                         <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Tahap 1</h6>
                             <h6 class="m-0 font-weight-bold text-primary">Menghitung Probabilitas Sejumlah Mention</h6>
                         </div>
                         <div class="card-body">
@@ -84,6 +85,7 @@
 
                     <div class="card shadow mb-4">
                         <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Tahap 2</h6>
                             <h6 class="m-0 font-weight-bold text-primary">Menghitung Probabilitas User</h6>
                         </div>
                         <div class="card-body">
@@ -113,6 +115,7 @@
 
                     <div class="card shadow mb-4">
                         <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Tahap 3</h6>
                             <h6 class="m-0 font-weight-bold text-primary">Menghitung Skor Link Anomaly</h6>
                         </div>
                         <div class="card-body">
@@ -141,6 +144,7 @@
 
                     <div class="card shadow mb-4">
                         <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Tahap 4</h6>
                             <h6 class="m-0 font-weight-bold text-primary">Menghitung Agregasi Skor Link Anomaly</h6>
                         </div>
                         <div class="card-body">
@@ -168,6 +172,7 @@
 
                     <div class="card shadow mb-4">
                         <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Tahap 5</h6>
                             <h6 class="m-0 font-weight-bold text-primary">Menyeleksi Agregasi Skor Link Anomaly</h6>
                         </div>
                         <div class="card-body">
@@ -197,6 +202,7 @@
 
                     <div class="card shadow mb-4">
                         <div class=" card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Tahap 6</h6>
                             <h6 class="m-0 font-weight-bold text-primary">Menghitung Cost Function</h6>
                         </div>
                         <div class="card-body">
@@ -267,6 +273,9 @@
 <script src="js/demo/chart-pie-demo.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.2.1/decimal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.min.js"
+    integrity="sha384-tyF19AUUsmK/e8HhLOObI0ye3stj6i18V+R0GIiXpLVxwBs/mKqqyg8H8obIMCRG"
+    crossorigin="anonymous"></script>
 
 <script>
     let result = {};
@@ -399,6 +408,15 @@
         }
     }
 
+    function scientificToPower10(numString) {
+        // Mencari apakah formatnya mengandung notasi ilmiah 'e'
+        let [base, exponent] = numString.toLowerCase().split('e');
+        if (exponent) {
+            return `${parseFloat(base).toFixed(4)} × 10^${parseInt(exponent)}`;
+        }
+        return numString;
+    }
+
     function populateProbabilityTable(probabilities) {
         const table = document.getElementById("probabilityTable");
         table.innerHTML = "";
@@ -415,7 +433,7 @@
             cellIndex.innerHTML = index + 1;
             cellUsername.innerHTML = username;
             cellText.innerHTML = text;
-            cellProb.innerHTML = decimalValue.toFixed(decimalValue.decimalPlaces());
+            cellProb.innerHTML = scientificToPower10(decimalValue.toString());
         });
     }
 
@@ -425,17 +443,18 @@
         userProbabilities.forEach((item, index) => {
             const text = item[0];
             const mentions = item[1];
-            const probability = item[2];
+            const probabilityArray = item[2];
             let row = table.insertRow();
             let cellIndex = row.insertCell(0);
             let cellText = row.insertCell(1);
             let cellMentions = row.insertCell(2);
             let cellProb = row.insertCell(3);
-            let decimalValue = new Decimal(probability);
+
+            const probabilityString = probabilityArray.join(", ");
             cellIndex.innerHTML = index + 1;
             cellText.innerHTML = text;
             cellMentions.innerHTML = mentions;
-            cellProb.innerHTML = decimalValue.toFixed(decimalValue.decimalPlaces());
+            cellProb.innerHTML = probabilityString;
         });
     }
 

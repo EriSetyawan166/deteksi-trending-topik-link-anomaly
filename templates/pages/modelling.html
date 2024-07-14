@@ -108,7 +108,7 @@
                     return word[0];
                 });
 
-                var newTopicTitle = topWords.join(' ');
+                var newTopicTitle = topWords.join(', ');
 
                 var formattedWords = sortedWords.map(function (item) {
                     return item[0] + " = " + item[1].toFixed(6);
