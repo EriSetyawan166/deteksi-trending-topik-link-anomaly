@@ -1,0 +1,9 @@
+flask==3.1.0
+mysql.connector==2.2.9
+flask-socketio==5.5.1
+python-dotenv==1.0.1
+numpy==2.0.2
+pandas==2.2.3
+pysastrawi==1.2.0
+tqdm==4.67.1
+nltk==3.9.1
