@@ -176,7 +176,8 @@ def run_lda(documents, K, max_iteration):
     Return:
     - tuple: Mengembalikan tuple yang berisi counter kata per topik, counter topik per dokumen, panjang dokumen, jumlah kata per topik, dan jumlah kata unik.
     """
-    random.seed(28347429)
+    # random.seed(28347429)
+    random.seed(161231236)
     D = len(documents)
     document_topic_counts = [Counter() for _ in documents]
     topic_word_counts = [Counter() for _ in range(K)]

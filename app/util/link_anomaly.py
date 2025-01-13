@@ -434,10 +434,11 @@ def link_anomaly(data, sequence=2):
 
 
 def main():
-    locale.setlocale(locale.LC_TIME, 'id_ID')
+    # locale.setlocale(locale.LC_TIME, 'id_ID')
 
-    data = ambil_data_bersih()
-    hasil = link_anomaly(data, 2)
+    # data = ambil_data_bersih()
+    # hasil = link_anomaly(data, 2)
+    pass
 
 
 if __name__ == "__main__":

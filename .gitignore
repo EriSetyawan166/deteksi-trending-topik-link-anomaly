@@ -11,6 +11,6 @@ tweets-data-preprocessed/*
 !tweets-data-preprocessed/.gitkeep 
 !tweets-data/.gitkeep 
 
-link_anomaly_result.json
-link_anomaly_result_detail.json
-topic_word_list.json
+link_anomaly_result_detail_pas_skripsi.json
+link_anomaly_result_pas_skripsi.json
+topic_word_list_pas_skripsi.json
